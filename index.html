@@ -58,7 +58,7 @@
 
             try {
                 // Consultar Google Sheets (Formato JSON)
-                const url = https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;
+                const url = 'https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json';
                 const resp = await fetch(url);
                 const text = await resp.text();
                 const json = JSON.parse(text.substr(47).slice(0, -2));
