@@ -43,62 +43,68 @@
             </div>
         </nav>
 
-        <div id="pdf-container" class="container mx-auto py-8 bg-slate-900"></div>
+        <div id="pdf-container" class="container mx-auto py-8 bg-slate-900">
+            </div>
     </div>
 
     <script>
         // --- CONFIGURACIÓN ---
-        const SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM'; 
-        const PDF_URL = 'reporte.pdf'; 
+        var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM'; 
+        var PDF_URL = 'reporte.pdf'; 
 
         async function validarAcceso() {
-            const inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
-            if (!inputCode) return alert("Ingrese un código");
+            var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
+            if (!inputCode) {
+                alert("Por favor, ingrese un código.");
+                return;
+            }
 
             try {
-                // CORRECCIÓN: Se usan comillas invertidas ` para que funcione la variable
-                const url = https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;
+                // Construcción de URL compatible
+                var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:json';
                 
-                const resp = await fetch(url);
-                const text = await resp.text();
+                var resp = await fetch(url);
+                var text = await resp.text();
                 
-                // Limpieza del JSON de Google
-                const json = JSON.parse(text.substring(47).slice(0, -2));
-                const rows = json.table.rows;
+                // Limpieza manual del JSON de Google
+                var jsonText = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+                var json = JSON.parse(jsonText);
+                var rows = json.table.rows;
 
-                let data = null;
-                rows.forEach(row => {
-                    // Verificamos que la celda del código exista y coincida
-                    if (row.c[0] && row.c[0].v.toString().toUpperCase() === inputCode) {
-                        data = {
-                            nombre: row.c[1].v,
-                            // Convertimos la lista de páginas "1,2,3" en un arreglo de números
-                            paginas: row.c[2].v.toString().split(',').map(num => parseInt(num.trim())),
-                            debeForms: row.c[3] && row.c[3].v.toString().toUpperCase() === "SI",
-                            linkForms: row.c[4] ? row.c[4].v : "#"
+                var dataEncontrada = null;
+
+                for (var i = 0; i < rows.length; i++) {
+                    var fila = rows[i].c;
+                    if (fila[0] && fila[0].v && fila[0].v.toString().toUpperCase() === inputCode) {
+                        dataEncontrada = {
+                            nombre: fila[1] ? fila[1].v : "Gerencia",
+                            paginas: fila[2] ? fila[2].v.toString().split(',').map(Number) : [1],
+                            debeForms: fila[3] && fila[3].v.toString().toUpperCase() === "SI",
+                            linkForms: fila[4] ? fila[4].v : "#"
                         };
+                        break;
                     }
-                });
+                }
 
-                if (data) {
-                    cargarDashboard(data);
+                if (dataEncontrada) {
+                    cargarDashboard(dataEncontrada);
                 } else {
-                    alert("Código no válido o no encontrado en el Excel.");
+                    alert("Código no reconocido. Revise su Excel.");
                 }
             } catch (e) {
-                console.error("Error en la conexión:", e);
-                alert("Error conectando con Google Sheets. Verifique que el archivo sea público.");
+                console.error("Error:", e);
+                alert("Error de conexión. Asegúrese de que el Excel sea PÚBLICO.");
             }
         }
 
         function cargarDashboard(data) {
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('report-section').classList.remove('hidden');
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('report-section').style.display = 'block';
             document.getElementById('nombreGerencia').innerText = data.nombre;
 
             if (data.debeForms) {
-                const btn = document.getElementById('btnForms');
-                btn.classList.remove('hidden');
+                var btn = document.getElementById('btnForms');
+                btn.style.display = 'flex';
                 btn.href = data.linkForms;
             }
 
@@ -106,30 +112,33 @@
         }
 
         async function renderPDF(pages) {
-            const pdfjsLib = window['pdfjs-dist/build/pdf'];
-            // Cargamos el worker correctamente
+            var pdfjsLib = window['pdfjs-dist/build/pdf'];
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
             try {
-                const loadingTask = pdfjsLib.getDocument(PDF_URL);
-                const pdf = await loadingTask.promise;
-                const container = document.getElementById('pdf-container');
-                container.innerHTML = ''; // Limpiar visualizador
+                var container = document.getElementById('pdf-container');
+                container.innerHTML = '<p style="text-align:center">Cargando reporte...</p>';
+                
+                var loadingTask = pdfjsLib.getDocument(PDF_URL);
+                var pdf = await loadingTask.promise;
+                container.innerHTML = ''; 
 
-                for (let num of pages) {
-                    const page = await pdf.getPage(num);
-                    const viewport = page.getViewport({ scale: 1.5 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
+                for (var i = 0; i < pages.length; i++) {
+                    var num = pages[i];
+                    if (num > 0 && num <= pdf.numPages) {
+                        var page = await pdf.getPage(num);
+                        var viewport = page.getViewport({ scale: 1.5 });
+                        var canvas = document.createElement('canvas');
+                        var context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
 
-                    await page.render({ canvasContext: context, viewport: viewport }).promise;
-                    container.appendChild(canvas);
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        container.appendChild(canvas);
+                    }
                 }
             } catch (error) {
-                console.error("Error PDF:", error);
-                alert("No se pudo cargar el archivo 'reporte.pdf'. Verifique que esté subido a GitHub.");
+                alert("Error: No se encontró el archivo 'reporte.pdf' en GitHub.");
             }
         }
     </script>
