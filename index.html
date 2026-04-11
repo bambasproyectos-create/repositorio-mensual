@@ -8,226 +8,170 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
-        canvas { 
-            display: block; 
-            margin: 20px auto; 
-            border: 1px solid #ddd; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-            max-width: 95%; 
-        }
+        canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 95%; }
+        .pulse-red { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .group:hover .submenu { opacity: 1; visibility: visible; transform: translateY(0); }
+        .submenu { transition: all 0.3s ease; opacity: 0; visibility: hidden; transform: translateY(10px); }
     </style>
 </head>
-<body class="bg-white min-h-screen text-slate-900 font-sans">
+<body class="bg-slate-50 min-h-screen text-slate-900 font-sans relative">
 
-    <div id="login-section" class="flex items-center justify-center h-screen bg-slate-50">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 text-center relative overflow-hidden">
-            
+    <div id="login-section" class="flex items-center justify-center h-screen bg-slate-50 relative z-10">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 text-center">
             <img id="empresa-logo" src="logo-bambas.png" alt="Logo Las Bambas" class="mx-auto mb-6 max-w-full">
-            
             <h1 class="text-3xl font-extrabold mb-2 text-[#ED1C24]">Control de Reportes</h1>
-            <p class="text-slate-600 mb-8">Ingrese su código de gerencia autorizado</p>
-            
-            <input type="text" id="accessCode" placeholder="CÓDIGO" 
-                class="w-full p-4 bg-white border border-slate-400 rounded-xl mb-6 text-center text-xl tracking-widest uppercase focus:border-[#ED1C24] outline-none">
-            
-            <button onclick="validarAcceso()" 
-                class="w-full bg-[#ED1C24] hover:bg-[#D11118] text-white font-bold py-4 rounded-xl transition-all shadow-lg">
-                INGRESAR AL SISTEMA
-            </button>
-            
+            <p class="text-slate-600 mb-8">Ingrese su código de gerencia</p>
+            <input type="text" id="accessCode" placeholder="CÓDIGO" class="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl mb-6 text-center text-xl tracking-widest uppercase focus:border-[#ED1C24] outline-none">
+            <button onclick="validarAcceso()" class="w-full bg-[#ED1C24] hover:bg-[#D11118] text-white font-bold py-4 rounded-xl transition-all shadow-lg">INGRESAR</button>
             <p class="text-xs text-slate-500 mt-4">Desarrollado por Nataly Coronel A.</p>
         </div>
     </div>
 
-    <div id="report-section" class="hidden">
-        <nav class="bg-slate-100 border-b border-slate-300 p-4 sticky top-0 z-10 shadow-md">
-            <div class="container mx-auto flex flex-wrap justify-between items-center gap-4">
-                <div>
-                    <h2 id="nombreGerencia" class="text-xl font-bold text-[#ED1C24]">---</h2>
-                    <p class="text-xs text-slate-600 uppercase tracking-tighter">Reporte Mensual Automatizado</p>
+    <div id="report-section" class="hidden pb-24">
+        <nav class="bg-white border-b border-slate-300 sticky top-0 z-40 shadow-sm">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center py-4">
+                    <div>
+                        <h2 id="nombreGerencia" class="text-xl font-bold text-[#ED1C24]">---</h2>
+                        <p id="subtituloPestana" class="text-xs text-slate-600 uppercase font-bold tracking-widest">APF</p>
+                    </div>
+                    <button onclick="location.reload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">SALIR</button>
                 </div>
-                
-                <div class="flex gap-2 items-center">
-                    
-                    <a id="btnForms" target="_blank" class="hidden bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors">
-                        ⚠️ FORMS
-                    </a>
-
-                    <a id="btnPowerBI" href="reporte.pbix" download class="hidden bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors shadow-sm">
-                        ⬇️ PBIX
-                    </a>
-                    
-                    <button id="btnDescargar" onclick="descargarPDFGenerado()" class="hidden bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors shadow-sm">
-                        ⬇️ PDF
-                    </button>
-
-                    <button onclick="location.reload()" class="bg-slate-200 hover:bg-slate-300 text-slate-900 px-4 py-2 rounded-lg text-sm font-bold transition-colors border border-slate-300">
-                        SALIR
-                    </button>
+                <div class="flex gap-8 mt-2 overflow-x-auto">
+                    <button id="tab-apf" onclick="cambiarPestana('APF')" class="py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24]">APF</button>
+                    <button id="tab-capex" onclick="cambiarPestana('CAPEX')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 font-bold">CAPEX</button>
+                    <button id="tab-cierre" onclick="cambiarPestana('CIERRE')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 font-bold">CIERRE</button>
                 </div>
             </div>
         </nav>
 
-        <div id="pdf-container" class="container mx-auto py-8 bg-white">
+        <div id="pdf-container" class="container mx-auto py-8"></div>
+
+        <a id="btnFormsFlotante" target="_blank" class="hidden fixed bottom-6 left-6 z-50 bg-[#ED1C24] hover:bg-[#D11118] text-white px-6 py-4 rounded-full shadow-2xl font-bold pulse-red items-center border-2 border-white">
+            <span class="mr-2">⚠️</span> Llenar Forms <span id="labelForms" class="ml-1 uppercase"></span>
+        </a>
+
+        <div id="panelDescargas" class="hidden fixed bottom-6 right-6 z-50 group">
+            <div class="submenu absolute bottom-full right-0 mb-4 flex flex-col gap-3 w-48">
+                <a href="reporte.pbix" download class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl shadow-lg font-bold text-sm text-center">📊 PBIX</a>
+                <button onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl shadow-lg font-bold text-sm text-center">📄 PDF Actual</button>
             </div>
+            <div class="bg-slate-900 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center cursor-pointer border-2 border-slate-700">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </div>
+        </div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN ---
-        var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM'; 
-        var PDF_URL = 'reporte.pdf'; 
-        
-        var paginasGlobales = [];
-        var nombreGerenciaGlobal = "Reporte";
+        var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM';
+        // Definimos los 3 archivos diferentes
+        var PDF_FILES = {
+            'APF': 'reporte_apf.pdf',
+            'CAPEX': 'reporte_capex.pdf',
+            'CIERRE': 'reporte_cierre.pdf'
+        };
+
+        var dataGerencia = null;
+        var pestanaActiva = 'APF';
 
         async function validarAcceso() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
-            if (!inputCode) {
-                alert("Por favor, ingrese un código.");
-                return;
-            }
-
             try {
-                var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:json';
+                var url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
                 var resp = await fetch(url);
                 var text = await resp.text();
-                
-                var jsonText = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
-                var json = JSON.parse(jsonText);
+                var json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
                 var rows = json.table.rows;
 
-                var dataEncontrada = null;
-
                 for (var i = 0; i < rows.length; i++) {
-                    var fila = rows[i].c;
-                    if (fila[0] && fila[0].v && fila[0].v.toString().toUpperCase() === inputCode) {
-                        dataEncontrada = {
-                            nombre: fila[1] ? fila[1].v : "Gerencia",
-                            paginas: fila[2] ? fila[2].v.toString().split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n)) : [1],
-                            debeForms: fila[3] && fila[3].v.toString().toUpperCase() === "SI",
-                            linkForms: fila[4] ? fila[4].v : "#"
+                    var f = rows[i].c;
+                    if (f[0] && f[0].v.toString().toUpperCase() === inputCode) {
+                        dataGerencia = {
+                            nombre: f[1].v,
+                            APF: { pag: f[2] ? f[2].v.toString() : "", debe: f[3]?.v === "SI", link: f[4]?.v },
+                            CAPEX: { pag: f[5] ? f[5].v.toString() : "", debe: f[6]?.v === "SI", link: f[7]?.v },
+                            CIERRE: { pag: f[8] ? f[8].v.toString() : "", debe: f[9]?.v === "SI", link: f[10]?.v }
                         };
                         break;
                     }
                 }
-
-                if (dataEncontrada) {
-                    cargarDashboard(dataEncontrada);
-                } else {
-                    alert("Código no reconocido. Revise su Excel.");
-                }
-            } catch (e) {
-                console.error("Error al validar el acceso:", e);
-                alert("Error de conexión con el Excel.");
-            }
+                if (dataGerencia) {
+                    document.getElementById('login-section').style.display = 'none';
+                    document.getElementById('report-section').classList.remove('hidden');
+                    document.getElementById('nombreGerencia').innerText = dataGerencia.nombre;
+                    document.getElementById('panelDescargas').classList.remove('hidden');
+                    cambiarPestana('APF');
+                } else { alert("Código no válido"); }
+            } catch (e) { alert("Error de conexión"); }
         }
 
-        function cargarDashboard(data) {
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('report-section').style.display = 'block';
+        function cambiarPestana(tipo) {
+            pestanaActiva = tipo;
+            document.getElementById('subtituloPestana').innerText = tipo;
             
-            document.getElementById('nombreGerencia').innerText = data.nombre;
-            
-            paginasGlobales = data.paginas;
-            nombreGerenciaGlobal = data.nombre;
+            // UI de pestañas
+            ['APF', 'CAPEX', 'CIERRE'].forEach(t => {
+                const btn = document.getElementById(`tab-${t.toLowerCase()}`);
+                btn.className = (t === tipo) ? "py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24]" : "py-3 px-2 border-b-4 border-transparent text-slate-500 font-bold";
+            });
 
-            if (data.debeForms) {
-                var btnF = document.getElementById('btnForms');
-                btnF.style.display = 'flex';
-                btnF.href = data.linkForms;
+            // Lógica del Botón Forms Flotante (IZQUIERDA)
+            const btnF = document.getElementById('btnFormsFlotante');
+            if (dataGerencia[tipo].debe) {
+                btnF.classList.remove('hidden');
+                btnF.classList.add('flex');
+                btnF.href = dataGerencia[tipo].link;
+                document.getElementById('labelForms').innerText = tipo;
+            } else {
+                btnF.classList.add('hidden');
+                btnF.classList.remove('flex');
             }
 
-            // Mostrar los botones de descarga
-            document.getElementById('btnDescargar').style.display = 'flex';
-            document.getElementById('btnPowerBI').style.display = 'flex';
-
-            renderPDF(data.paginas);
+            // Cargar PDF específico
+            const pags = dataGerencia[tipo].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            renderizarSeccion(PDF_FILES[tipo], pags);
         }
 
-        async function renderPDF(pages) {
-            var pdfjsLib = window['pdfjs-dist/build/pdf'];
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-
+        async function renderizarSeccion(url, pages) {
+            const container = document.getElementById('pdf-container');
+            container.innerHTML = '<p class="text-center text-slate-400 mt-10">Cargando archivo...</p>';
+            
             try {
-                var container = document.getElementById('pdf-container');
-                container.innerHTML = '<p style="text-align:center; color: #64748b;">Cargando reporte mensual en alta calidad...</p>';
-                
-                var loadingTask = pdfjsLib.getDocument(PDF_URL);
-                var pdf = await loadingTask.promise;
-                container.innerHTML = ''; 
-
-                for (var i = 0; i < pages.length; i++) {
-                    var num = pages[i];
-                    
+                const pdf = await pdfjsLib.getDocument(url).promise;
+                container.innerHTML = '';
+                for (let num of pages) {
                     if (num > 0 && num <= pdf.numPages) {
-                        var page = await pdf.getPage(num);
-                        var viewport = page.getViewport({ scale: 3.5 }); 
-                        
-                        var canvas = document.createElement('canvas');
-                        var context = canvas.getContext('2d');
-                        
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        canvas.style.width = "100%"; 
-                        canvas.style.maxWidth = "1100px"; 
-
-                        context.imageSmoothingEnabled = true;
-                        context.imageSmoothingQuality = "high";
-
-                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        const page = await pdf.getPage(num);
+                        const viewport = page.getViewport({ scale: 3.5 });
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.height = viewport.height; canvas.width = viewport.width;
+                        canvas.style.width = "100%"; canvas.style.maxWidth = "1100px";
+                        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                         container.appendChild(canvas);
                     }
                 }
-            } catch (error) {
-                console.error(error);
-                document.getElementById('pdf-container').innerHTML = '<p style="text-align:center; color: #ef4444;">Error al visualizar el PDF.</p>';
-            }
+            } catch (e) { container.innerHTML = '<p class="text-center text-red-500">El archivo PDF no se encuentra disponible.</p>'; }
         }
 
         async function descargarPDFGenerado() {
-            var btn = document.getElementById('btnDescargar');
-            // Cambiar texto a estado de carga
-            btn.innerHTML = '⏳...';
-            btn.disabled = true;
-
             try {
-                const respuesta = await fetch(PDF_URL);
-                const bytesOriginales = await respuesta.arrayBuffer();
-
-                const { PDFDocument } = PDFLib;
-                const pdfOriginal = await PDFDocument.load(bytesOriginales);
-                const pdfNuevo = await PDFDocument.create();
-
-                const indicesACopiar = paginasGlobales
-                    .filter(num => num > 0 && num <= pdfOriginal.getPageCount())
-                    .map(num => num - 1); 
-
-                const paginasExtraidas = await pdfNuevo.copyPages(pdfOriginal, indicesACopiar);
-
-                paginasExtraidas.forEach(pagina => {
-                    pdfNuevo.addPage(pagina);
-                });
-
-                const bytesFinales = await pdfNuevo.save();
-                const blob = new Blob([bytesFinales], { type: "application/pdf" });
-                const urlDescarga = URL.createObjectURL(blob);
-
+                const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                const resp = await fetch(PDF_FILES[pestanaActiva]);
+                const bytesOrig = await resp.arrayBuffer();
+                const pdfOrig = await PDFLib.PDFDocument.load(bytesOrig);
+                const pdfNuevo = await PDFLib.PDFDocument.create();
+                const indices = pags.filter(n => n > 0 && n <= pdfOrig.getPageCount()).map(n => n - 1);
+                const copiadas = await pdfNuevo.copyPages(pdfOrig, indices);
+                copiadas.forEach(p => pdfNuevo.addPage(p));
+                const bytesFin = await pdfNuevo.save();
+                const blob = new Blob([bytesFin], { type: "application/pdf" });
                 const link = document.createElement('a');
-                link.href = urlDescarga;
-                const nombreLimpio = nombreGerenciaGlobal.trim().replace(/\s+/g, '_');
-                link.download = `Reporte_${nombreLimpio}.pdf`;
-                document.body.appendChild(link);
+                link.href = URL.createObjectURL(blob);
+                link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}.pdf`;
                 link.click();
-                document.body.removeChild(link);
-
-            } catch (error) {
-                console.error("Error al generar el PDF de descarga:", error);
-                alert("Hubo un problema al intentar descargar el documento.");
-            } finally {
-                // Restaurar texto original
-                btn.innerHTML = '⬇️ PDF';
-                btn.disabled = false;
-            }
+            } catch (e) { alert("Error al generar descarga"); }
         }
     </script>
 </body>
