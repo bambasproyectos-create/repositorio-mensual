@@ -15,12 +15,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
             max-width: 95%; 
         }
-        .pulse-red { animation: pulse 2s infinite; }
-        @keyframes pulse { 
-            0% { transform: scale(1); } 
-            50% { transform: scale(1.05); } 
-            100% { transform: scale(1); } 
-        }
     </style>
 </head>
 <body class="bg-white min-h-screen text-slate-900 font-sans">
@@ -52,16 +46,24 @@
                     <h2 id="nombreGerencia" class="text-xl font-bold text-[#ED1C24]">---</h2>
                     <p class="text-xs text-slate-600 uppercase tracking-tighter">Reporte Mensual Automatizado</p>
                 </div>
-                <div class="flex gap-3 items-center">
-                    <a id="btnForms" target="_blank" class="hidden bg-[#ED1C24] hover:bg-[#D11118] text-white px-5 py-2 rounded-lg text-sm font-bold pulse-red items-center">
+                
+                <div class="flex gap-2 items-center">
+                    
+                    <a id="btnForms" target="_blank" class="hidden bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors">
                         ⚠️ FORMS
                     </a>
+
+                    <a id="btnPowerBI" href="reporte.pbix" download class="hidden bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors shadow-sm">
+                        ⬇️ PBIX
+                    </a>
                     
-                    <button id="btnDescargar" onclick="descargarPDFGenerado()" class="hidden bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md items-center gap-2 transition-all">
-                        ⬇️ DESCARGAR PDF
+                    <button id="btnDescargar" onclick="descargarPDFGenerado()" class="hidden bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors shadow-sm">
+                        ⬇️ PDF
                     </button>
 
-                    <button onclick="location.reload()" class="bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-lg text-sm text-slate-900 font-bold">SALIR</button>
+                    <button onclick="location.reload()" class="bg-slate-200 hover:bg-slate-300 text-slate-900 px-4 py-2 rounded-lg text-sm font-bold transition-colors border border-slate-300">
+                        SALIR
+                    </button>
                 </div>
             </div>
         </nav>
@@ -75,7 +77,6 @@
         var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM'; 
         var PDF_URL = 'reporte.pdf'; 
         
-        // Variables globales para recordar qué vamos a descargar
         var paginasGlobales = [];
         var nombreGerenciaGlobal = "Reporte";
 
@@ -127,7 +128,6 @@
             
             document.getElementById('nombreGerencia').innerText = data.nombre;
             
-            // Guardamos los datos para usarlos en el botón de descarga
             paginasGlobales = data.paginas;
             nombreGerenciaGlobal = data.nombre;
 
@@ -137,8 +137,9 @@
                 btnF.href = data.linkForms;
             }
 
-            // Mostrar el botón de descargar
+            // Mostrar los botones de descarga
             document.getElementById('btnDescargar').style.display = 'flex';
+            document.getElementById('btnPowerBI').style.display = 'flex';
 
             renderPDF(data.paginas);
         }
@@ -183,48 +184,36 @@
             }
         }
 
-        // --- NUEVA FUNCIÓN PARA DESCARGAR EL PDF FILTRADO ---
         async function descargarPDFGenerado() {
             var btn = document.getElementById('btnDescargar');
-            var textoOriginal = btn.innerHTML;
-            
-            // Cambiar el texto del botón mientras procesa
-            btn.innerHTML = '⏳ GENERANDO...';
+            // Cambiar texto a estado de carga
+            btn.innerHTML = '⏳...';
             btn.disabled = true;
 
             try {
-                // 1. Descargar el archivo original de nuevo en formato "bytes"
                 const respuesta = await fetch(PDF_URL);
                 const bytesOriginales = await respuesta.arrayBuffer();
 
-                // 2. Usar la librería PDFLib para leerlo
                 const { PDFDocument } = PDFLib;
                 const pdfOriginal = await PDFDocument.load(bytesOriginales);
-                
-                // 3. Crear un documento en blanco nuevo
                 const pdfNuevo = await PDFDocument.create();
 
-                // 4. Copiar solo las páginas requeridas (PDFLib empieza a contar desde 0, no desde 1)
                 const indicesACopiar = paginasGlobales
                     .filter(num => num > 0 && num <= pdfOriginal.getPageCount())
                     .map(num => num - 1); 
 
                 const paginasExtraidas = await pdfNuevo.copyPages(pdfOriginal, indicesACopiar);
 
-                // 5. Pegar las páginas en el documento nuevo
                 paginasExtraidas.forEach(pagina => {
                     pdfNuevo.addPage(pagina);
                 });
 
-                // 6. Convertir el nuevo PDF a un archivo descargable
                 const bytesFinales = await pdfNuevo.save();
                 const blob = new Blob([bytesFinales], { type: "application/pdf" });
                 const urlDescarga = URL.createObjectURL(blob);
 
-                // 7. Simular un clic oculto para forzar la descarga en el navegador
                 const link = document.createElement('a');
                 link.href = urlDescarga;
-                // Formatear el nombre eliminando espacios y poniendo guiones bajos
                 const nombreLimpio = nombreGerenciaGlobal.trim().replace(/\s+/g, '_');
                 link.download = `Reporte_${nombreLimpio}.pdf`;
                 document.body.appendChild(link);
@@ -235,8 +224,8 @@
                 console.error("Error al generar el PDF de descarga:", error);
                 alert("Hubo un problema al intentar descargar el documento.");
             } finally {
-                // Restaurar el botón a su estado normal
-                btn.innerHTML = textoOriginal;
+                // Restaurar texto original
+                btn.innerHTML = '⬇️ PDF';
                 btn.disabled = false;
             }
         }
