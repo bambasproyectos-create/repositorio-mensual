@@ -43,34 +43,38 @@
             </div>
         </nav>
 
-        <div id="pdf-container" class="container mx-auto py-8 bg-slate-900">
-            </div>
+        <div id="pdf-container" class="container mx-auto py-8 bg-slate-900"></div>
     </div>
 
     <script>
         // --- CONFIGURACIÓN ---
-        const SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM'; // <--- PEGA AQUÍ EL ID DE TU GOOGLE SHEET
-        const PDF_URL = 'reporte.pdf'; // Nombre del archivo en tu GitHub
+        const SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM'; 
+        const PDF_URL = 'reporte.pdf'; 
 
         async function validarAcceso() {
             const inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
             if (!inputCode) return alert("Ingrese un código");
 
             try {
-                // Consultar Google Sheets (Formato JSON)
-                const url = 'https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json';
+                // CORRECCIÓN: Se usan comillas invertidas ` para que funcione la variable
+                const url = https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;
+                
                 const resp = await fetch(url);
                 const text = await resp.text();
-                const json = JSON.parse(text.substr(47).slice(0, -2));
+                
+                // Limpieza del JSON de Google
+                const json = JSON.parse(text.substring(47).slice(0, -2));
                 const rows = json.table.rows;
 
                 let data = null;
                 rows.forEach(row => {
-                    if (row.c[0] && row.c[0].v === inputCode) {
+                    // Verificamos que la celda del código exista y coincida
+                    if (row.c[0] && row.c[0].v.toString().toUpperCase() === inputCode) {
                         data = {
                             nombre: row.c[1].v,
-                            paginas: row.c[2].v.toString().split(',').map(Number),
-                            debeForms: row.c[3] && row.c[3].v === "SI",
+                            // Convertimos la lista de páginas "1,2,3" en un arreglo de números
+                            paginas: row.c[2].v.toString().split(',').map(num => parseInt(num.trim())),
+                            debeForms: row.c[3] && row.c[3].v.toString().toUpperCase() === "SI",
                             linkForms: row.c[4] ? row.c[4].v : "#"
                         };
                     }
@@ -79,11 +83,11 @@
                 if (data) {
                     cargarDashboard(data);
                 } else {
-                    alert("Código no válido o acceso denegado.");
+                    alert("Código no válido o no encontrado en el Excel.");
                 }
             } catch (e) {
-                console.error(e);
-                alert("Error conectando con la base de datos.");
+                console.error("Error en la conexión:", e);
+                alert("Error conectando con Google Sheets. Verifique que el archivo sea público.");
             }
         }
 
@@ -103,22 +107,29 @@
 
         async function renderPDF(pages) {
             const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            // Cargamos el worker correctamente
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-            const loadingTask = pdfjsLib.getDocument(PDF_URL);
-            const pdf = await loadingTask.promise;
-            const container = document.getElementById('pdf-container');
+            try {
+                const loadingTask = pdfjsLib.getDocument(PDF_URL);
+                const pdf = await loadingTask.promise;
+                const container = document.getElementById('pdf-container');
+                container.innerHTML = ''; // Limpiar visualizador
 
-            for (let num of pages) {
-                const page = await pdf.getPage(num);
-                const viewport = page.getViewport({ scale: 1.5 });
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+                for (let num of pages) {
+                    const page = await pdf.getPage(num);
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
 
-                await page.render({ canvasContext: context, viewport: viewport }).promise;
-                container.appendChild(canvas);
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    container.appendChild(canvas);
+                }
+            } catch (error) {
+                console.error("Error PDF:", error);
+                alert("No se pudo cargar el archivo 'reporte.pdf'. Verifique que esté subido a GitHub.");
             }
         }
     </script>
