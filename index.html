@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Gerencias | Reporte Mensual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        canvas { display: block; margin: 20px auto; border: 1px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 95%; }
+        .pulse-red { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen text-slate-100 font-sans">
+
+    <div id="login-section" class="flex items-center justify-center h-screen">
+        <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 text-center">
+            <h1 class="text-3xl font-extrabold mb-2 text-blue-400">Control de Reportes</h1>
+            <p class="text-slate-400 mb-8">Ingrese su código de gerencia autorizado</p>
+            <input type="text" id="accessCode" placeholder="CÓDIGO" 
+                class="w-full p-4 bg-slate-900 border border-slate-600 rounded-xl mb-6 text-center text-xl tracking-widest uppercase focus:border-blue-500 outline-none">
+            <button onclick="validarAcceso()" 
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg">
+                INGRESAR AL SISTEMA
+            </button>
+        </div>
+    </div>
+
+    <div id="report-section" class="hidden">
+        <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-10 shadow-md">
+            <div class="container mx-auto flex justify-between items-center">
+                <div>
+                    <h2 id="nombreGerencia" class="text-xl font-bold text-blue-400">---</h2>
+                    <p class="text-xs text-slate-400 uppercase tracking-tighter">Reporte Mensual Automatizado</p>
+                </div>
+                <div class="flex gap-4">
+                    <a id="btnForms" target="_blank" class="hidden bg-red-600 hover:bg-red-500 text-white px-5 py-2 rounded-lg text-sm font-bold pulse-red flex items-center">
+                        ⚠️ LLENAR FORMS DE RENDIMIENTO
+                    </a>
+                    <button onclick="location.reload()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm">SALIR</button>
+                </div>
+            </div>
+        </nav>
+
+        <div id="pdf-container" class="container mx-auto py-8 bg-slate-900">
+            </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM'; // <--- PEGA AQUÍ EL ID DE TU GOOGLE SHEET
+        const PDF_URL = 'reporte.pdf'; // Nombre del archivo en tu GitHub
+
+        async function validarAcceso() {
+            const inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
+            if (!inputCode) return alert("Ingrese un código");
+
+            try {
+                // Consultar Google Sheets (Formato JSON)
+                const url = https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;
+                const resp = await fetch(url);
+                const text = await resp.text();
+                const json = JSON.parse(text.substr(47).slice(0, -2));
+                const rows = json.table.rows;
+
+                let data = null;
+                rows.forEach(row => {
+                    if (row.c[0] && row.c[0].v === inputCode) {
+                        data = {
+                            nombre: row.c[1].v,
+                            paginas: row.c[2].v.toString().split(',').map(Number),
+                            debeForms: row.c[3] && row.c[3].v === "SI",
+                            linkForms: row.c[4] ? row.c[4].v : "#"
+                        };
+                    }
+                });
+
+                if (data) {
+                    cargarDashboard(data);
+                } else {
+                    alert("Código no válido o acceso denegado.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error conectando con la base de datos.");
+            }
+        }
+
+        function cargarDashboard(data) {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('report-section').classList.remove('hidden');
+            document.getElementById('nombreGerencia').innerText = data.nombre;
+
+            if (data.debeForms) {
+                const btn = document.getElementById('btnForms');
+                btn.classList.remove('hidden');
+                btn.href = data.linkForms;
+            }
+
+            renderPDF(data.paginas);
+        }
+
+        async function renderPDF(pages) {
+            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+            const loadingTask = pdfjsLib.getDocument(PDF_URL);
+            const pdf = await loadingTask.promise;
+            const container = document.getElementById('pdf-container');
+
+            for (let num of pages) {
+                const page = await pdf.getPage(num);
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                container.appendChild(canvas);
+            }
+        }
+    </script>
+</body>
+</html>
