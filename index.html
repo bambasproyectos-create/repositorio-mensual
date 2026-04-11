@@ -112,34 +112,52 @@
         }
 
         async function renderPDF(pages) {
+            // Configurar el worker de PDF.js
             var pdfjsLib = window['pdfjs-dist/build/pdf'];
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
             try {
                 var container = document.getElementById('pdf-container');
-                container.innerHTML = '<p style="text-align:center">Cargando reporte...</p>';
+                container.innerHTML = '<p style="text-align:center; color: #94a3b8;">Cargando reporte mensual en Alta Calidad...</p>';
                 
                 var loadingTask = pdfjsLib.getDocument(PDF_URL);
                 var pdf = await loadingTask.promise;
-                container.innerHTML = ''; 
+                container.innerHTML = ''; // Limpiar mensaje de carga
 
                 for (var i = 0; i < pages.length; i++) {
                     var num = pages[i];
+                    
+                    // Verificar que la página solicitada exista en el PDF
                     if (num > 0 && num <= pdf.numPages) {
                         var page = await pdf.getPage(num);
-                        var viewport = page.getViewport({ scale: 1.5 });
+                        
+                        // 🚀 TRUCO FULL HD: Aumentamos la escala interna a 3.0 o 4.0
+                        var viewport = page.getViewport({ scale: 3.5 }); 
+                        
                         var canvas = document.createElement('canvas');
                         var context = canvas.getContext('2d');
+                        
+                        // Establecemos la resolución interna real del canvas (muy alta)
                         canvas.height = viewport.height;
                         canvas.width = viewport.width;
 
+                        // 🚀 TRUCO FULL HD: Ajustamos el tamaño visual para que se comprima
+                        canvas.style.width = "100%"; 
+                        canvas.style.maxWidth = "1100px"; // Evita que sea gigantesco en PC
+
+                        // Mejorar la calidad del renderizado de imagen en el contexto
+                        context.imageSmoothingEnabled = true;
+                        context.imageSmoothingQuality = "high";
+
                         await page.render({ canvasContext: context, viewport: viewport }).promise;
                         container.appendChild(canvas);
+                    } else {
+                        console.warn('La página ' + num + ' no existe en este documento PDF.');
                     }
                 }
             } catch (error) {
-                console.error(error);
-                alert("Error: No se encontró el archivo 'reporte.pdf' o hubo un problema al cargarlo.");
+                console.error('Error al cargar el PDF:', error);
+                document.getElementById('pdf-container').innerHTML = '<p style="text-align:center; color: #ef4444;">Error: No se encontró el archivo "reporte.pdf" en la misma carpeta o hubo un problema al leerlo.</p>';
             }
         }
     </script>
