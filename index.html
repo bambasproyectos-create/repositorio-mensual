@@ -138,7 +138,8 @@
                     }
                 }
             } catch (error) {
-                alert("Error: No se encontró el archivo 'reporte.pdf' en GitHub.");
+                console.error(error);
+                alert("Error: No se encontró el archivo 'reporte.pdf' o hubo un problema al cargarlo.");
             }
         }
     </script>
