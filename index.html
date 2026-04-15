@@ -34,7 +34,7 @@
                 <div class="flex justify-between items-center py-4">
                     <div>
                         <h2 id="nombreGerencia" class="text-xl font-bold text-[#ED1C24]">---</h2>
-                        <p id="subtituloPestana" class="text-xs text-slate-600 uppercase font-bold tracking-widest">APF</p>
+                        <p id="subtituloMes" class="text-xs text-slate-600 uppercase font-bold tracking-widest">---</p>
                     </div>
                     <button onclick="location.reload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">SALIR</button>
                 </div>
@@ -65,7 +65,6 @@
 
     <script>
         var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM';
-        // Definimos los 3 archivos diferentes
         var PDF_FILES = {
             'APF': 'reporte_apf.pdf',
             'CAPEX': 'reporte_capex.pdf',
@@ -74,6 +73,9 @@
 
         var dataGerencia = null;
         var pestanaActiva = 'APF';
+
+        // Array de meses para traducir el número que da Javascript a texto en español
+        var mesesArray = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
         async function validarAcceso() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
@@ -96,11 +98,23 @@
                         break;
                     }
                 }
+                
                 if (dataGerencia) {
+                    // Ocultar login y mostrar dashboard
                     document.getElementById('login-section').style.display = 'none';
                     document.getElementById('report-section').classList.remove('hidden');
+                    
+                    // Colocar nombre de la gerencia
                     document.getElementById('nombreGerencia').innerText = dataGerencia.nombre;
+                    
+                    // COLOCAR MES Y AÑO AUTOMÁTICO
+                    var fechaActual = new Date();
+                    var textoFecha = mesesArray[fechaActual.getMonth()] + " " + fechaActual.getFullYear();
+                    document.getElementById('subtituloMes').innerText = "REPORTE - " + textoFecha.toUpperCase();
+
                     document.getElementById('panelDescargas').classList.remove('hidden');
+                    
+                    // Cargar la primera pestaña
                     cambiarPestana('APF');
                 } else { alert("Código no válido"); }
             } catch (e) { alert("Error de conexión"); }
@@ -108,7 +122,6 @@
 
         function cambiarPestana(tipo) {
             pestanaActiva = tipo;
-            document.getElementById('subtituloPestana').innerText = tipo;
             
             // UI de pestañas
             ['APF', 'CAPEX', 'CIERRE'].forEach(t => {
@@ -116,7 +129,7 @@
                 btn.className = (t === tipo) ? "py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24]" : "py-3 px-2 border-b-4 border-transparent text-slate-500 font-bold";
             });
 
-            // Lógica del Botón Forms Flotante (IZQUIERDA)
+            // Lógica del Botón Forms Flotante
             const btnF = document.getElementById('btnFormsFlotante');
             if (dataGerencia[tipo].debe) {
                 btnF.classList.remove('hidden');
@@ -140,6 +153,12 @@
             try {
                 const pdf = await pdfjsLib.getDocument(url).promise;
                 container.innerHTML = '';
+                
+                if(pages.length === 0) {
+                    container.innerHTML = `<div class="text-center p-12 bg-white rounded-xl shadow-sm border border-slate-200 mt-8"><p class="text-slate-500 font-bold text-lg">No hay páginas asignadas para esta sección.</p></div>`;
+                    return;
+                }
+
                 for (let num of pages) {
                     if (num > 0 && num <= pdf.numPages) {
                         const page = await pdf.getPage(num);
@@ -158,6 +177,12 @@
         async function descargarPDFGenerado() {
             try {
                 const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                
+                if(pags.length === 0) {
+                    alert("No hay páginas para descargar en esta sección.");
+                    return;
+                }
+
                 const resp = await fetch(PDF_FILES[pestanaActiva]);
                 const bytesOrig = await resp.arrayBuffer();
                 const pdfOrig = await PDFLib.PDFDocument.load(bytesOrig);
