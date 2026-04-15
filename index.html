@@ -11,7 +11,6 @@
         canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 95%; }
         .pulse-red { animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        /* Animaciones del menú flotante derecho */
         .group:hover .submenu { opacity: 1; visibility: visible; transform: translateY(0); }
         .submenu { transition: all 0.3s ease; opacity: 0; visibility: hidden; transform: translateY(10px); }
     </style>
@@ -30,7 +29,6 @@
     </div>
 
     <div id="report-section" class="hidden pb-24">
-        
         <nav class="bg-white border-b border-slate-300 sticky top-0 z-40 shadow-sm">
             <div class="container mx-auto px-4">
                 <div class="flex justify-between items-center py-4">
@@ -44,15 +42,15 @@
                 <div class="flex gap-8 mt-2 overflow-x-auto">
                     <button id="tab-apf" onclick="cambiarPestana('APF')" class="py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24] transition-colors">APF</button>
                     <button id="tab-capex" onclick="cambiarPestana('CAPEX')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-colors">CAPEX</button>
-                    <button id="tab-cierre" onclick="cambiarPestana('CIERRE')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-colors">CIERRE</button>
+                    <button id="tab-opex" onclick="cambiarPestana('OPEX')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-colors">OPEX</button>
                 </div>
             </div>
         </nav>
 
         <div id="pdf-container" class="container mx-auto py-8"></div>
 
-        <a id="btnFormsFlotante" target="_blank" class="hidden fixed bottom-6 left-6 z-50 bg-[#ED1C24] hover:bg-[#D11118] text-white px-6 py-4 rounded-full shadow-2xl font-bold pulse-red items-center border-2 border-white cursor-pointer">
-            <span class="mr-2 text-xl">⚠️</span> Llenar Forms <span id="labelForms" class="ml-1 uppercase"></span>
+        <a id="btnFormsFlotante" target="_blank" class="hidden fixed bottom-6 left-6 z-50 bg-[#ED1C24] hover:bg-[#D11118] text-white px-6 py-4 rounded-full shadow-2xl font-bold pulse-red items-center border-2 border-white cursor-pointer transition-all">
+            <span class="mr-2 text-xl">⚠️</span> Forms <span id="labelForms" class="ml-1 uppercase"></span>
         </a>
 
         <div id="panelDescargas" class="hidden fixed bottom-6 right-6 z-50 group">
@@ -71,12 +69,11 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN PRINCIPAL
         var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM';
         var PDF_FILES = {
             'APF': 'reporte_apf.pdf',
             'CAPEX': 'reporte_capex.pdf',
-            'CIERRE': 'reporte_cierre.pdf'
+            'OPEX': 'reporte_opex.pdf'
         };
 
         var dataGerencia = null;
@@ -92,9 +89,8 @@
                 var resp = await fetch(url);
                 var text = await resp.text();
                 
-                // Defensa contra Excel Privado
                 if (text.startsWith("<!DOCTYPE html>")) {
-                    alert("⚠️ ERROR: Tu Excel de Google Sheets está PRIVADO. Debes cambiar el permiso a 'Cualquier persona con el enlace'.");
+                    alert("⚠️ Acceso denegado: El archivo de Google Sheets debe ser público ('Cualquier persona con el enlace').");
                     return;
                 }
 
@@ -104,83 +100,66 @@
 
                 for (var i = 0; i < rows.length; i++) {
                     var f = rows[i].c;
-                    
-                    // Verificación segura para evitar filas vacías
                     if (f && f[0] && f[0].v && f[0].v.toString().toUpperCase() === inputCode) {
-                        
-                        // Función interna para leer celdas evitando errores si están en blanco
-                        const leerCelda = (index) => (f[index] && f[index].v) ? f[index].v.toString() : "";
-                        const esSi = (index) => leerCelda(index).toUpperCase() === "SI";
+                        const leerCelda = (idx) => (f[idx] && f[idx].v) ? f[idx].v.toString() : "";
+                        const esSi = (idx) => leerCelda(idx).toUpperCase() === "SI";
 
                         dataGerencia = {
                             nombre: leerCelda(1) || "Gerencia",
                             APF: { pag: leerCelda(2), debe: esSi(3), link: leerCelda(4) },
                             CAPEX: { pag: leerCelda(5), debe: esSi(6), link: leerCelda(7) },
-                            CIERRE: { pag: leerCelda(8), debe: esSi(9), link: leerCelda(10) }
+                            OPEX: { pag: leerCelda(8), debe: esSi(9), link: leerCelda(10) }
                         };
                         break;
                     }
                 }
                 
                 if (dataGerencia) {
-                    // 1. Mostrar Pantalla de Reportes
                     document.getElementById('login-section').style.display = 'none';
                     document.getElementById('report-section').classList.remove('hidden');
-                    
-                    // 2. Colocar Nombre
                     document.getElementById('nombreGerencia').innerText = dataGerencia.nombre;
                     
-                    // 3. Colocar Fecha Automática
                     var fechaActual = new Date();
                     document.getElementById('subtituloMes').innerText = "REPORTE - " + mesesArray[fechaActual.getMonth()].toUpperCase() + " " + fechaActual.getFullYear();
-                    
-                    // 4. Mostrar el botón de descargas derecho
                     document.getElementById('panelDescargas').classList.remove('hidden');
-                    
-                    // 5. Iniciar en la pestaña APF
                     cambiarPestana('APF');
                 } else { 
-                    alert("El código ingresado no existe o no es correcto."); 
+                    alert("Código no reconocido."); 
                 }
             } catch (e) { 
-                console.error("Error de conexión:", e);
-                alert("Hubo un error al intentar conectarse a la base de datos (Presione F12 para más detalles)."); 
+                alert("Error de conexión con la base de datos."); 
             }
         }
 
         function cambiarPestana(tipo) {
             pestanaActiva = tipo;
-            
-            // 1. Cambiar color de las pestañas
-            ['APF', 'CAPEX', 'CIERRE'].forEach(t => {
+            ['APF', 'CAPEX', 'OPEX'].forEach(t => {
                 const btn = document.getElementById(`tab-${t.toLowerCase()}`);
                 btn.className = (t === tipo) ? "py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24] transition-colors" : "py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-colors";
             });
 
-            // 2. Controlar la notificación de Forms (IZQUIERDA)
             const btnF = document.getElementById('btnFormsFlotante');
             if (dataGerencia[tipo].debe) {
                 btnF.classList.remove('hidden');
                 btnF.classList.add('flex');
                 btnF.href = dataGerencia[tipo].link;
-                document.getElementById('labelForms').innerText = tipo; // Dice "Llenar Forms APF"
+                document.getElementById('labelForms').innerText = tipo;
             } else {
                 btnF.classList.add('hidden');
                 btnF.classList.remove('flex');
             }
 
-            // 3. Obtener páginas y renderizar el PDF correcto
             const pags = dataGerencia[tipo].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
             renderizarSeccion(PDF_FILES[tipo], pags);
         }
 
         async function renderizarSeccion(url, pages) {
             const container = document.getElementById('pdf-container');
-            container.innerHTML = '<p class="text-center text-slate-400 mt-10 font-bold">Cargando visualización del documento...</p>';
+            container.innerHTML = '<p class="text-center text-slate-400 mt-10 font-bold">Cargando documento...</p>';
             
             try {
                 if(pages.length === 0) {
-                    container.innerHTML = `<div class="text-center p-12 bg-white rounded-xl shadow-sm border border-slate-200 mt-8"><p class="text-slate-500 font-bold text-lg">No hay páginas asignadas para la sección ${pestanaActiva}.</p></div>`;
+                    container.innerHTML = `<div class="text-center p-12 bg-white rounded-xl shadow-sm border border-slate-200 mt-8"><p class="text-slate-500 font-bold text-lg">No hay datos asignados para ${pestanaActiva}.</p></div>`;
                     return;
                 }
 
@@ -193,72 +172,51 @@
                 for (let num of pages) {
                     if (num > 0 && num <= pdf.numPages) {
                         const page = await pdf.getPage(num);
-                        const viewport = page.getViewport({ scale: 3.5 }); // Escala HD
+                        const viewport = page.getViewport({ scale: 3.5 });
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
                         canvas.height = viewport.height; 
                         canvas.width = viewport.width;
                         canvas.style.width = "100%"; 
                         canvas.style.maxWidth = "1100px";
-                        
                         ctx.imageSmoothingEnabled = true;
                         ctx.imageSmoothingQuality = "high";
-                        
                         await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                         container.appendChild(canvas);
                     }
                 }
             } catch (e) { 
-                container.innerHTML = `<p class="text-center text-red-500 mt-10 font-bold">Error: No se encontró el archivo "${url}". Asegúrese de haberlo subido a GitHub.</p>`; 
+                container.innerHTML = `<p class="text-center text-red-500 mt-10 font-bold">Error: No se pudo cargar el archivo "${url}".</p>`; 
             }
         }
 
         async function descargarPDFGenerado() {
             var btn = document.getElementById('btnDescargarPdf');
             var textoOrig = btn.innerHTML;
-            btn.innerHTML = '⏳ Procesando...';
+            btn.innerHTML = '⏳...';
             btn.disabled = true;
 
             try {
                 const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-                
-                if(pags.length === 0) {
-                    alert(`No hay páginas para descargar en la sección ${pestanaActiva}.`);
-                    throw new Error("Sin páginas");
-                }
-
                 const resp = await fetch(PDF_FILES[pestanaActiva]);
                 const bytesOrig = await resp.arrayBuffer();
                 const { PDFDocument } = PDFLib;
                 const pdfOrig = await PDFDocument.load(bytesOrig);
                 const pdfNuevo = await PDFDocument.create();
-                
                 const indices = pags.filter(n => n > 0 && n <= pdfOrig.getPageCount()).map(n => n - 1);
                 const copiadas = await pdfNuevo.copyPages(pdfOrig, indices);
-                
                 copiadas.forEach(p => pdfNuevo.addPage(p));
-                
                 const bytesFin = await pdfNuevo.save();
                 const blob = new Blob([bytesFin], { type: "application/pdf" });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 
-                // Formatear nombre: Reporte_APF_Operaciones_Abril_2026.pdf
                 var fecha = new Date();
                 var textoFecha = mesesArray[fecha.getMonth()] + "_" + fecha.getFullYear();
-                const nombreLimpio = dataGerencia.nombre.replace(/\s+/g, '_');
-                link.download = `Reporte_${pestanaActiva}_${nombreLimpio}_${textoFecha}.pdf`;
-                
-                document.body.appendChild(link);
+                link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}_${textoFecha}.pdf`;
                 link.click();
-                document.body.removeChild(link);
-                
-            } catch (e) { 
-                console.error(e);
-            } finally {
-                btn.innerHTML = textoOrig;
-                btn.disabled = false;
-            }
+            } catch (e) { alert("Error al generar descarga"); }
+            finally { btn.innerHTML = textoOrig; btn.disabled = false; }
         }
     </script>
 </body>
