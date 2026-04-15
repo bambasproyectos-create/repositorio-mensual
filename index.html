@@ -11,6 +11,7 @@
         canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 95%; }
         .pulse-red { animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        /* Animaciones del menú flotante derecho */
         .group:hover .submenu { opacity: 1; visibility: visible; transform: translateY(0); }
         .submenu { transition: all 0.3s ease; opacity: 0; visibility: hidden; transform: translateY(10px); }
     </style>
@@ -23,12 +24,13 @@
             <h1 class="text-3xl font-extrabold mb-2 text-[#ED1C24]">Control de Reportes</h1>
             <p class="text-slate-600 mb-8">Ingrese su código de gerencia</p>
             <input type="text" id="accessCode" placeholder="CÓDIGO" class="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl mb-6 text-center text-xl tracking-widest uppercase focus:border-[#ED1C24] outline-none">
-            <button onclick="validarAcceso()" class="w-full bg-[#ED1C24] hover:bg-[#D11118] text-white font-bold py-4 rounded-xl transition-all shadow-lg">INGRESAR</button>
+            <button onclick="validarAcceso()" class="w-full bg-[#ED1C24] hover:bg-[#D11118] text-white font-bold py-4 rounded-xl transition-all shadow-lg">INGRESAR AL SISTEMA</button>
             <p class="text-xs text-slate-500 mt-4">Desarrollado por Nataly Coronel A.</p>
         </div>
     </div>
 
     <div id="report-section" class="hidden pb-24">
+        
         <nav class="bg-white border-b border-slate-300 sticky top-0 z-40 shadow-sm">
             <div class="container mx-auto px-4">
                 <div class="flex justify-between items-center py-4">
@@ -36,34 +38,40 @@
                         <h2 id="nombreGerencia" class="text-xl font-bold text-[#ED1C24]">---</h2>
                         <p id="subtituloMes" class="text-xs text-slate-600 uppercase font-bold tracking-widest">---</p>
                     </div>
-                    <button onclick="location.reload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">SALIR</button>
+                    <button onclick="location.reload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition-colors">SALIR</button>
                 </div>
+                
                 <div class="flex gap-8 mt-2 overflow-x-auto">
-                    <button id="tab-apf" onclick="cambiarPestana('APF')" class="py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24]">APF</button>
-                    <button id="tab-capex" onclick="cambiarPestana('CAPEX')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 font-bold">CAPEX</button>
-                    <button id="tab-cierre" onclick="cambiarPestana('CIERRE')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 font-bold">CIERRE</button>
+                    <button id="tab-apf" onclick="cambiarPestana('APF')" class="py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24] transition-colors">APF</button>
+                    <button id="tab-capex" onclick="cambiarPestana('CAPEX')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-colors">CAPEX</button>
+                    <button id="tab-cierre" onclick="cambiarPestana('CIERRE')" class="py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-colors">CIERRE</button>
                 </div>
             </div>
         </nav>
 
         <div id="pdf-container" class="container mx-auto py-8"></div>
 
-        <a id="btnFormsFlotante" target="_blank" class="hidden fixed bottom-6 left-6 z-50 bg-[#ED1C24] hover:bg-[#D11118] text-white px-6 py-4 rounded-full shadow-2xl font-bold pulse-red items-center border-2 border-white">
-            <span class="mr-2">⚠️</span> Llenar Forms <span id="labelForms" class="ml-1 uppercase"></span>
+        <a id="btnFormsFlotante" target="_blank" class="hidden fixed bottom-6 left-6 z-50 bg-[#ED1C24] hover:bg-[#D11118] text-white px-6 py-4 rounded-full shadow-2xl font-bold pulse-red items-center border-2 border-white cursor-pointer">
+            <span class="mr-2 text-xl">⚠️</span> Llenar Forms <span id="labelForms" class="ml-1 uppercase"></span>
         </a>
 
         <div id="panelDescargas" class="hidden fixed bottom-6 right-6 z-50 group">
             <div class="submenu absolute bottom-full right-0 mb-4 flex flex-col gap-3 w-48">
-                <a href="reporte.pbix" download class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl shadow-lg font-bold text-sm text-center">📊 PBIX</a>
-                <button onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl shadow-lg font-bold text-sm text-center">📄 PDF Actual</button>
+                <a href="reporte.pbix" download class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl shadow-lg font-bold text-sm text-center flex items-center justify-center gap-2">
+                    📊 Descargar PBIX
+                </a>
+                <button id="btnDescargarPdf" onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl shadow-lg font-bold text-sm text-center flex items-center justify-center gap-2">
+                    📄 Descargar PDF
+                </button>
             </div>
-            <div class="bg-slate-900 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center cursor-pointer border-2 border-slate-700">
+            <div class="bg-slate-900 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:scale-105 transition-transform border-2 border-slate-700">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
             </div>
         </div>
     </div>
 
     <script>
+        // CONFIGURACIÓN PRINCIPAL
         var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM';
         var PDF_FILES = {
             'APF': 'reporte_apf.pdf',
@@ -73,11 +81,9 @@
 
         var dataGerencia = null;
         var pestanaActiva = 'APF';
-
-        // Array de meses para traducir el número que da Javascript a texto en español
         var mesesArray = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-async function validarAcceso() {
+        async function validarAcceso() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
             if (!inputCode) { alert("Ingrese un código."); return; }
 
@@ -86,9 +92,9 @@ async function validarAcceso() {
                 var resp = await fetch(url);
                 var text = await resp.text();
                 
-                // NUEVA DEFENSA: Verifica si Google bloqueó el acceso
+                // Defensa contra Excel Privado
                 if (text.startsWith("<!DOCTYPE html>")) {
-                    alert("⚠️ ERROR: Tu Excel está PRIVADO. Ve a Google Sheets y cámbialo a 'Cualquier persona con el enlace'.");
+                    alert("⚠️ ERROR: Tu Excel de Google Sheets está PRIVADO. Debes cambiar el permiso a 'Cualquier persona con el enlace'.");
                     return;
                 }
 
@@ -99,10 +105,10 @@ async function validarAcceso() {
                 for (var i = 0; i < rows.length; i++) {
                     var f = rows[i].c;
                     
-                    // Evita errores si hay filas totalmente en blanco en el Excel
+                    // Verificación segura para evitar filas vacías
                     if (f && f[0] && f[0].v && f[0].v.toString().toUpperCase() === inputCode) {
                         
-                        // Función interna súper segura para leer celdas (incluso si están vacías)
+                        // Función interna para leer celdas evitando errores si están en blanco
                         const leerCelda = (index) => (f[index] && f[index].v) ? f[index].v.toString() : "";
                         const esSi = (index) => leerCelda(index).toUpperCase() === "SI";
 
@@ -117,107 +123,142 @@ async function validarAcceso() {
                 }
                 
                 if (dataGerencia) {
-                    // Ocultar login y mostrar dashboard
+                    // 1. Mostrar Pantalla de Reportes
                     document.getElementById('login-section').style.display = 'none';
                     document.getElementById('report-section').classList.remove('hidden');
                     
-                    // Colocar nombre de la gerencia
+                    // 2. Colocar Nombre
                     document.getElementById('nombreGerencia').innerText = dataGerencia.nombre;
                     
-                    // Colocar mes y año automático
+                    // 3. Colocar Fecha Automática
                     var fechaActual = new Date();
                     document.getElementById('subtituloMes').innerText = "REPORTE - " + mesesArray[fechaActual.getMonth()].toUpperCase() + " " + fechaActual.getFullYear();
                     
+                    // 4. Mostrar el botón de descargas derecho
                     document.getElementById('panelDescargas').classList.remove('hidden');
                     
-                    // Cargar la primera pestaña
+                    // 5. Iniciar en la pestaña APF
                     cambiarPestana('APF');
                 } else { 
-                    alert("El código ingresado no existe en su base de datos."); 
+                    alert("El código ingresado no existe o no es correcto."); 
                 }
             } catch (e) { 
-                console.error("DETALLE DEL ERROR TÉCNICO:", e);
-                alert("Error de conexión. Presiona la tecla F12 y revisa la pestaña 'Consola' para ver qué falló exactamente."); 
+                console.error("Error de conexión:", e);
+                alert("Hubo un error al intentar conectarse a la base de datos (Presione F12 para más detalles)."); 
             }
         }
 
         function cambiarPestana(tipo) {
             pestanaActiva = tipo;
             
-            // UI de pestañas
+            // 1. Cambiar color de las pestañas
             ['APF', 'CAPEX', 'CIERRE'].forEach(t => {
                 const btn = document.getElementById(`tab-${t.toLowerCase()}`);
-                btn.className = (t === tipo) ? "py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24]" : "py-3 px-2 border-b-4 border-transparent text-slate-500 font-bold";
+                btn.className = (t === tipo) ? "py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24] transition-colors" : "py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-colors";
             });
 
-            // Lógica del Botón Forms Flotante
+            // 2. Controlar la notificación de Forms (IZQUIERDA)
             const btnF = document.getElementById('btnFormsFlotante');
             if (dataGerencia[tipo].debe) {
                 btnF.classList.remove('hidden');
                 btnF.classList.add('flex');
                 btnF.href = dataGerencia[tipo].link;
-                document.getElementById('labelForms').innerText = tipo;
+                document.getElementById('labelForms').innerText = tipo; // Dice "Llenar Forms APF"
             } else {
                 btnF.classList.add('hidden');
                 btnF.classList.remove('flex');
             }
 
-            // Cargar PDF específico
+            // 3. Obtener páginas y renderizar el PDF correcto
             const pags = dataGerencia[tipo].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
             renderizarSeccion(PDF_FILES[tipo], pags);
         }
 
         async function renderizarSeccion(url, pages) {
             const container = document.getElementById('pdf-container');
-            container.innerHTML = '<p class="text-center text-slate-400 mt-10">Cargando archivo...</p>';
+            container.innerHTML = '<p class="text-center text-slate-400 mt-10 font-bold">Cargando visualización del documento...</p>';
             
             try {
-                const pdf = await pdfjsLib.getDocument(url).promise;
-                container.innerHTML = '';
-                
                 if(pages.length === 0) {
-                    container.innerHTML = `<div class="text-center p-12 bg-white rounded-xl shadow-sm border border-slate-200 mt-8"><p class="text-slate-500 font-bold text-lg">No hay páginas asignadas para esta sección.</p></div>`;
+                    container.innerHTML = `<div class="text-center p-12 bg-white rounded-xl shadow-sm border border-slate-200 mt-8"><p class="text-slate-500 font-bold text-lg">No hay páginas asignadas para la sección ${pestanaActiva}.</p></div>`;
                     return;
                 }
 
+                const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+                
+                const pdf = await pdfjsLib.getDocument(url).promise;
+                container.innerHTML = '';
+                
                 for (let num of pages) {
                     if (num > 0 && num <= pdf.numPages) {
                         const page = await pdf.getPage(num);
-                        const viewport = page.getViewport({ scale: 3.5 });
+                        const viewport = page.getViewport({ scale: 3.5 }); // Escala HD
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        canvas.height = viewport.height; canvas.width = viewport.width;
-                        canvas.style.width = "100%"; canvas.style.maxWidth = "1100px";
+                        canvas.height = viewport.height; 
+                        canvas.width = viewport.width;
+                        canvas.style.width = "100%"; 
+                        canvas.style.maxWidth = "1100px";
+                        
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = "high";
+                        
                         await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                         container.appendChild(canvas);
                     }
                 }
-            } catch (e) { container.innerHTML = '<p class="text-center text-red-500">El archivo PDF no se encuentra disponible.</p>'; }
+            } catch (e) { 
+                container.innerHTML = `<p class="text-center text-red-500 mt-10 font-bold">Error: No se encontró el archivo "${url}". Asegúrese de haberlo subido a GitHub.</p>`; 
+            }
         }
 
         async function descargarPDFGenerado() {
+            var btn = document.getElementById('btnDescargarPdf');
+            var textoOrig = btn.innerHTML;
+            btn.innerHTML = '⏳ Procesando...';
+            btn.disabled = true;
+
             try {
                 const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
                 
                 if(pags.length === 0) {
-                    alert("No hay páginas para descargar en esta sección.");
-                    return;
+                    alert(`No hay páginas para descargar en la sección ${pestanaActiva}.`);
+                    throw new Error("Sin páginas");
                 }
 
                 const resp = await fetch(PDF_FILES[pestanaActiva]);
                 const bytesOrig = await resp.arrayBuffer();
-                const pdfOrig = await PDFLib.PDFDocument.load(bytesOrig);
-                const pdfNuevo = await PDFLib.PDFDocument.create();
+                const { PDFDocument } = PDFLib;
+                const pdfOrig = await PDFDocument.load(bytesOrig);
+                const pdfNuevo = await PDFDocument.create();
+                
                 const indices = pags.filter(n => n > 0 && n <= pdfOrig.getPageCount()).map(n => n - 1);
                 const copiadas = await pdfNuevo.copyPages(pdfOrig, indices);
+                
                 copiadas.forEach(p => pdfNuevo.addPage(p));
+                
                 const bytesFin = await pdfNuevo.save();
                 const blob = new Blob([bytesFin], { type: "application/pdf" });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}.pdf`;
+                
+                // Formatear nombre: Reporte_APF_Operaciones_Abril_2026.pdf
+                var fecha = new Date();
+                var textoFecha = mesesArray[fecha.getMonth()] + "_" + fecha.getFullYear();
+                const nombreLimpio = dataGerencia.nombre.replace(/\s+/g, '_');
+                link.download = `Reporte_${pestanaActiva}_${nombreLimpio}_${textoFecha}.pdf`;
+                
+                document.body.appendChild(link);
                 link.click();
-            } catch (e) { alert("Error al generar descarga"); }
+                document.body.removeChild(link);
+                
+            } catch (e) { 
+                console.error(e);
+            } finally {
+                btn.innerHTML = textoOrig;
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
