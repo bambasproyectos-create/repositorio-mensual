@@ -8,24 +8,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
-        canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 95%; transition: transform 0.2s ease; }
+        /* Ajustes para el contenedor y los canvas del PDF */
+        canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; }
         .pulse-red { animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         
         .group:hover .submenu { opacity: 1; visibility: visible; transform: translateY(0); }
         .submenu { transition: all 0.3s ease; opacity: 0; visibility: hidden; transform: translateY(10px); }
         
-        /* Estilo para el scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        /* Estilo elegante para el scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: #ED1C24; border-radius: 10px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900 font-sans relative">
 
     <div id="login-section" class="flex items-center justify-center h-screen bg-slate-50 relative z-50">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 text-center">
-            <img id="empresa-logo" src="logo-bambas.png" alt="Logo Las Bambas" class="mx-auto mb-6 max-w-full">
+            <img id="empresa-logo-login" src="logo-bambas.png" alt="Logo Las Bambas" class="mx-auto mb-6 max-w-full">
             <h1 class="text-3xl font-extrabold mb-2 text-[#ED1C24]">Control de Reportes</h1>
             <p class="text-slate-600 mb-8 font-medium">Ingrese su código de gerencia</p>
             <input type="text" id="accessCode" placeholder="CÓDIGO" class="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl mb-6 text-center text-xl tracking-widest uppercase focus:border-[#ED1C24] outline-none transition-all">
@@ -35,14 +37,18 @@
     </div>
 
     <div id="report-section" class="hidden pb-24">
+        
         <nav class="bg-white border-b border-slate-300 sticky top-0 z-40 shadow-sm">
             <div class="container mx-auto px-4">
                 <div class="flex justify-between items-center py-4">
-                    <div>
-                        <h2 id="nombreGerencia" class="text-xl font-bold text-[#ED1C24]">---</h2>
-                        <p id="subtituloMes" class="text-xs text-slate-600 uppercase font-bold tracking-widest">---</p>
+                    <div class="flex items-center gap-4">
+                        <img src="logo-bambas.png" alt="Logo" class="h-10 object-contain hidden sm:block">
+                        <div class="sm:border-l-2 border-slate-200 sm:pl-4">
+                            <h2 id="nombreGerencia" class="text-xl font-bold text-[#ED1C24]">---</h2>
+                            <p id="subtituloMes" class="text-xs text-slate-600 uppercase font-bold tracking-widest">---</p>
+                        </div>
                     </div>
-                    <button onclick="location.reload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition-all">SALIR</button>
+                    <button onclick="location.reload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition-all border border-slate-200">SALIR</button>
                 </div>
                 <div class="flex gap-8 mt-2 overflow-x-auto no-scrollbar">
                     <button id="tab-apf" onclick="cambiarPestana('APF')" class="py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24] transition-all">APF</button>
@@ -52,18 +58,21 @@
             </div>
         </nav>
 
-        <div id="pdf-container" class="container mx-auto py-8"></div>
+        <div class="w-full overflow-x-auto pb-8">
+            <div id="pdf-container" class="mx-auto flex flex-col items-center transition-all duration-300 origin-top" style="width: 100%; max-width: 1100px;">
+                </div>
+        </div>
 
         <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center bg-slate-900/90 text-white rounded-full px-4 py-2 shadow-2xl border border-slate-700 backdrop-blur-sm gap-4">
-            <button onclick="ajustarZoom(-0.5)" class="hover:text-[#ED1C24] p-1 transition-colors">
+            <button onclick="ajustarZoom(-25)" class="hover:text-[#ED1C24] p-1 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path></svg>
             </button>
-            <span id="zoomLabel" class="text-xs font-bold w-12 text-center">350%</span>
-            <button onclick="ajustarZoom(0.5)" class="hover:text-[#ED1C24] p-1 transition-colors">
+            <span id="zoomLabel" class="text-xs font-bold w-12 text-center">100%</span>
+            <button onclick="ajustarZoom(25)" class="hover:text-[#ED1C24] p-1 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
             </button>
             <div class="w-px h-4 bg-slate-600"></div>
-            <button onclick="resetZoom()" class="text-[10px] font-extrabold hover:text-[#ED1C24] transition-colors">100%</button>
+            <button onclick="resetZoom()" class="text-[10px] font-extrabold hover:text-[#ED1C24] transition-colors">RESET</button>
         </div>
 
         <a id="btnFormsFlotante" target="_blank" class="hidden fixed bottom-6 left-6 z-50 bg-[#ED1C24] hover:bg-[#D11118] text-white px-6 py-4 rounded-full shadow-2xl font-bold pulse-red items-center border-2 border-white transition-all">
@@ -73,20 +82,20 @@
         <div id="panelDescargas" class="hidden fixed bottom-6 right-6 z-50 group">
             <div class="submenu absolute bottom-full right-0 mb-4 flex flex-col gap-2 w-64 bg-white p-3 rounded-2xl shadow-2xl border border-slate-200">
                 <p class="text-[10px] text-slate-400 font-bold px-2 mb-1 uppercase tracking-widest">Reporte Mensual</p>
-                <a href="reporte.pbix" download class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all">
+                <a href="reporte.pbix" download class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm">
                     <span>📊</span> Descargar PBIX
                 </a>
-                <button onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all">
+                <button onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm">
                     <span>📄</span> Descargar PDF Actual
                 </button>
                 
                 <div id="seccionDescargasAPF" class="hidden mt-2 pt-2 border-t border-slate-100 flex flex-col gap-2">
                     <p class="text-[10px] text-slate-400 font-bold px-2 mb-1 uppercase tracking-widest">Formatos Procedimiento</p>
-                    <a href="formato_pif.xlsx" download class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold text-[11px] flex items-center gap-3 transition-all">
-                        <span>📁</span> Formato PIF
+                    <a href="formato_pif.pdf" download class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl font-bold text-[11px] flex items-center gap-3 transition-all">
+                        <span class="text-red-600 font-bold text-sm">PDF</span> Formato PIF
                     </a>
-                    <a href="formato_apf.xlsx" download class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold text-[11px] flex items-center gap-3 transition-all">
-                        <span>📁</span> Formato APF
+                    <a href="formato_apf.docx" download class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl font-bold text-[11px] flex items-center gap-3 transition-all">
+                        <span class="text-blue-600 font-bold text-sm">DOC</span> Formato APF
                     </a>
                 </div>
             </div>
@@ -102,7 +111,7 @@
         
         var dataGerencia = null;
         var pestanaActiva = 'APF';
-        var escalaActual = 3.5; // Zoom inicial HD
+        var zoomVisual = 100; // Porcentaje de zoom
         var mesesArray = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
         async function validarAcceso() {
@@ -146,10 +155,11 @@
                 btn.className = (t === tipo) ? "py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24]" : "py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold";
             });
 
-            // Mostrar formatos extra solo si es APF
+            // Control visual de la sección APF en descargas
             const secAPF = document.getElementById('seccionDescargasAPF');
             tipo === 'APF' ? secAPF.classList.remove('hidden') : secAPF.classList.add('hidden');
 
+            // Forms
             const btnF = document.getElementById('btnFormsFlotante');
             if (dataGerencia[tipo].debe) {
                 btnF.classList.remove('hidden'); btnF.classList.add('flex');
@@ -157,19 +167,27 @@
                 document.getElementById('labelForms').innerText = tipo;
             } else { btnF.classList.add('hidden'); }
 
+            resetZoom(); // Reiniciar el zoom al cambiar de pestaña
             cargarPDF();
         }
 
+        // --- NUEVA LÓGICA DE ZOOM CSS (Instantánea) ---
         function ajustarZoom(delta) {
-            escalaActual = Math.max(1, Math.min(6, escalaActual + delta));
-            document.getElementById('zoomLabel').innerText = Math.round(escalaActual * 100) + "%";
-            cargarPDF();
+            zoomVisual = Math.max(50, Math.min(250, zoomVisual + delta)); // Mínimo 50%, Máximo 250%
+            aplicarZoomCSS();
         }
 
         function resetZoom() {
-            escalaActual = 1.5;
-            document.getElementById('zoomLabel').innerText = "150%";
-            cargarPDF();
+            zoomVisual = 100;
+            aplicarZoomCSS();
+        }
+
+        function aplicarZoomCSS() {
+            document.getElementById('zoomLabel').innerText = zoomVisual + "%";
+            const container = document.getElementById('pdf-container');
+            // Cambiamos el ancho y el máximo ancho dinámicamente con CSS
+            container.style.width = zoomVisual + "%";
+            container.style.maxWidth = (1100 * (zoomVisual / 100)) + "px";
         }
 
         async function cargarPDF() {
@@ -177,7 +195,7 @@
             const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
             const url = PDF_FILES[pestanaActiva];
             
-            container.innerHTML = '<p class="text-center text-slate-400 mt-10 animate-pulse">Ajustando visualización...</p>';
+            container.innerHTML = '<p class="text-center text-slate-400 mt-10 animate-pulse font-bold">Generando documento en Alta Resolución...</p>';
             
             try {
                 const pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -188,19 +206,29 @@
                 for (let num of pags) {
                     if (num > 0 && num <= pdf.numPages) {
                         const page = await pdf.getPage(num);
-                        const viewport = page.getViewport({ scale: escalaActual });
+                        // Renderizamos SIEMPRE en HD (escala 3.5), el tamaño visual lo controla el Zoom CSS
+                        const viewport = page.getViewport({ scale: 3.5 });
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        canvas.height = viewport.height; canvas.width = viewport.width;
-                        canvas.style.width = "100%"; canvas.style.maxWidth = "1100px";
+                        canvas.height = viewport.height; 
+                        canvas.width = viewport.width;
+                        
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = "high";
+                        
                         await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                         container.appendChild(canvas);
                     }
                 }
-            } catch (e) { container.innerHTML = '<p class="text-center text-red-400">Error al cargar el archivo.</p>'; }
+            } catch (e) { container.innerHTML = '<p class="text-center text-red-400 font-bold">Error al cargar el archivo PDF.</p>'; }
         }
 
         async function descargarPDFGenerado() {
+            var btn = document.getElementById('btnDescargarPdf');
+            var textoOrig = btn.innerHTML;
+            btn.innerHTML = '⏳ Generando...';
+            btn.disabled = true;
+
             try {
                 const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
                 const resp = await fetch(PDF_FILES[pestanaActiva]);
@@ -213,9 +241,13 @@
                 const blob = new Blob([await pdfNuevo.save()], { type: "application/pdf" });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}.pdf`;
+                
+                var fecha = new Date();
+                var textoFecha = mesesArray[fecha.getMonth()] + "_" + fecha.getFullYear();
+                link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}_${textoFecha}.pdf`;
                 link.click();
             } catch (e) { alert("Error en descarga"); }
+            finally { btn.innerHTML = textoOrig; btn.disabled = false; }
         }
     </script>
 </body>
