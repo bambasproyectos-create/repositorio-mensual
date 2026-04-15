@@ -77,23 +77,40 @@
         // Array de meses para traducir el número que da Javascript a texto en español
         var mesesArray = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-        async function validarAcceso() {
+async function validarAcceso() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
+            if (!inputCode) { alert("Ingrese un código."); return; }
+
             try {
                 var url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
                 var resp = await fetch(url);
                 var text = await resp.text();
-                var json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+                
+                // NUEVA DEFENSA: Verifica si Google bloqueó el acceso
+                if (text.startsWith("<!DOCTYPE html>")) {
+                    alert("⚠️ ERROR: Tu Excel está PRIVADO. Ve a Google Sheets y cámbialo a 'Cualquier persona con el enlace'.");
+                    return;
+                }
+
+                var jsonText = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+                var json = JSON.parse(jsonText);
                 var rows = json.table.rows;
 
                 for (var i = 0; i < rows.length; i++) {
                     var f = rows[i].c;
-                    if (f[0] && f[0].v.toString().toUpperCase() === inputCode) {
+                    
+                    // Evita errores si hay filas totalmente en blanco en el Excel
+                    if (f && f[0] && f[0].v && f[0].v.toString().toUpperCase() === inputCode) {
+                        
+                        // Función interna súper segura para leer celdas (incluso si están vacías)
+                        const leerCelda = (index) => (f[index] && f[index].v) ? f[index].v.toString() : "";
+                        const esSi = (index) => leerCelda(index).toUpperCase() === "SI";
+
                         dataGerencia = {
-                            nombre: f[1].v,
-                            APF: { pag: f[2] ? f[2].v.toString() : "", debe: f[3]?.v === "SI", link: f[4]?.v },
-                            CAPEX: { pag: f[5] ? f[5].v.toString() : "", debe: f[6]?.v === "SI", link: f[7]?.v },
-                            CIERRE: { pag: f[8] ? f[8].v.toString() : "", debe: f[9]?.v === "SI", link: f[10]?.v }
+                            nombre: leerCelda(1) || "Gerencia",
+                            APF: { pag: leerCelda(2), debe: esSi(3), link: leerCelda(4) },
+                            CAPEX: { pag: leerCelda(5), debe: esSi(6), link: leerCelda(7) },
+                            CIERRE: { pag: leerCelda(8), debe: esSi(9), link: leerCelda(10) }
                         };
                         break;
                     }
@@ -107,17 +124,21 @@
                     // Colocar nombre de la gerencia
                     document.getElementById('nombreGerencia').innerText = dataGerencia.nombre;
                     
-                    // COLOCAR MES Y AÑO AUTOMÁTICO
+                    // Colocar mes y año automático
                     var fechaActual = new Date();
-                    var textoFecha = mesesArray[fechaActual.getMonth()] + " " + fechaActual.getFullYear();
-                    document.getElementById('subtituloMes').innerText = "REPORTE - " + textoFecha.toUpperCase();
-
+                    document.getElementById('subtituloMes').innerText = "REPORTE - " + mesesArray[fechaActual.getMonth()].toUpperCase() + " " + fechaActual.getFullYear();
+                    
                     document.getElementById('panelDescargas').classList.remove('hidden');
                     
                     // Cargar la primera pestaña
                     cambiarPestana('APF');
-                } else { alert("Código no válido"); }
-            } catch (e) { alert("Error de conexión"); }
+                } else { 
+                    alert("El código ingresado no existe en su base de datos."); 
+                }
+            } catch (e) { 
+                console.error("DETALLE DEL ERROR TÉCNICO:", e);
+                alert("Error de conexión. Presiona la tecla F12 y revisa la pestaña 'Consola' para ver qué falló exactamente."); 
+            }
         }
 
         function cambiarPestana(tipo) {
