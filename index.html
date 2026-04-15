@@ -8,7 +8,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
-        canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; }
+        /* Estilos del Canvas y cursores para el Paneo */
+        canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; pointer-events: none; }
+        #pdf-container { cursor: grab; }
+        #pdf-container:active { cursor: grabbing; }
+        
         .pulse-red { animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .group:hover .submenu { opacity: 1; visibility: visible; transform: translateY(0); }
@@ -21,8 +25,10 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900 font-sans relative">
 
-    <div id="login-section" class="flex items-center justify-center h-screen bg-slate-50 relative z-50">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 text-center mx-4">
+    <div id="login-section" class="flex items-center justify-center h-screen relative z-50 bg-slate-900 bg-cover bg-center" style="background-image: url('fondo_login.png');">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm z-0"></div>
+        
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 text-center mx-4 relative z-10">
             <img id="empresa-logo-login" src="logo-bambas.png" alt="Logo Las Bambas" class="mx-auto mb-6 max-w-full">
             <h1 class="text-3xl font-extrabold mb-2 text-[#ED1C24]">Control de Reportes</h1>
             <p class="text-slate-600 mb-8 font-medium">Ingrese su código de gerencia</p>
@@ -59,7 +65,7 @@
             <p id="loading-text" class="text-slate-600 font-bold tracking-widest uppercase text-xs sm:text-sm">Conectando...</p>
         </div>
 
-        <div class="w-full overflow-x-auto pb-8">
+        <div id="pdf-scroll-wrapper" class="w-full overflow-x-auto pb-8">
             <div id="pdf-container" class="mx-auto flex flex-col items-center transition-all duration-300 origin-top" style="width: 100%; max-width: 1100px;">
                 </div>
         </div>
@@ -119,9 +125,46 @@
         var zoomVisual = 100; 
         var mesesArray = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-        // VARIABLES PARA EL ZOOM INTELIGENTE
         var zoomTimeout;
         var lastScrollTop = 0;
+
+        // --- SISTEMA DE PANEO (MANITO PARA ARRASTRAR) ---
+        let isDragging = false;
+        let startX, startY, scrollLeftPos, scrollTopPos;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('pdf-container');
+            const wrapper = document.getElementById('pdf-scroll-wrapper');
+
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.pageX - wrapper.offsetLeft;
+                startY = e.pageY;
+                scrollLeftPos = wrapper.scrollLeft;
+                scrollTopPos = window.pageYOffset || document.documentElement.scrollTop;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault(); // Evita seleccionar texto por accidente al mover
+                
+                const x = e.pageX - wrapper.offsetLeft;
+                const y = e.pageY;
+                
+                // Calculamos cuánto se movió el mouse
+                const walkX = (x - startX); 
+                const walkY = (y - startY);
+                
+                // Aplicamos el movimiento a la barra horizontal y a la pantalla vertical
+                wrapper.scrollLeft = scrollLeftPos - walkX;
+                window.scrollTo(window.pageXOffset, scrollTopPos - walkY);
+            });
+        });
+        // ------------------------------------------------
 
         async function validarAcceso() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
@@ -178,7 +221,6 @@
             cargarPDF();
         }
 
-        // --- LÓGICA DE ZOOM INTELIGENTE (SMART HIDE) ---
         function mostrarZoom() {
             const zoomBar = document.getElementById('zoomBar');
             zoomBar.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
@@ -194,32 +236,29 @@
 
         function iniciarOcultadoZoom() {
             clearTimeout(zoomTimeout);
-            zoomTimeout = setTimeout(ocultarZoom, 3500); // Se oculta tras 3.5 segundos de inactividad
+            zoomTimeout = setTimeout(ocultarZoom, 3500); 
         }
 
         function mantenerZoom() {
-            clearTimeout(zoomTimeout); // Evita que se oculte si el mouse está encima
+            clearTimeout(zoomTimeout); 
         }
 
-        // Detectar Scroll
         window.addEventListener('scroll', function() {
             let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             if (scrollTop > lastScrollTop && scrollTop > 50) {
-                ocultarZoom(); // Scroll hacia abajo
+                ocultarZoom(); 
             } else {
-                mostrarZoom(); // Scroll hacia arriba
+                mostrarZoom(); 
             }
             lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
         }, false);
 
-        // Detectar Mouse cerca del borde inferior (Para usuarios de PC)
         window.addEventListener('mousemove', function(e) {
             if (window.innerHeight - e.clientY < 150) {
                 mostrarZoom();
             }
         });
 
-        // --- FUNCIONES DE ZOOM CSS ---
         function ajustarZoom(delta) {
             zoomVisual = Math.max(50, Math.min(250, zoomVisual + delta));
             aplicarZoomCSS();
@@ -279,7 +318,7 @@
                         container.appendChild(canvas);
                     }
                 }
-                mostrarZoom(); // Muestra el zoom automáticamente al terminar de cargar el PDF
+                mostrarZoom(); 
             } catch (e) { 
                 container.innerHTML = `<p class="text-center text-red-500 font-bold mt-10">Error al cargar el archivo PDF de ${pestanaActiva}.</p>`; 
             } finally {
