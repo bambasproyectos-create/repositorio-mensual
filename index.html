@@ -9,6 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
         canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; }
+        .pulse-red { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .group:hover .submenu { opacity: 1; visibility: visible; transform: translateY(0); }
         .submenu { transition: all 0.3s ease; opacity: 0; visibility: hidden; transform: translateY(10px); }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -62,7 +64,7 @@
                 </div>
         </div>
 
-        <div class="fixed bottom-[90px] sm:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-800/90 text-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 shadow-xl border border-slate-600 backdrop-blur-sm gap-2 sm:gap-4">
+        <div id="zoomBar" onmouseenter="mantenerZoom()" onmouseleave="iniciarOcultadoZoom()" class="fixed bottom-[90px] sm:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-800/90 text-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 shadow-xl border border-slate-600 backdrop-blur-sm gap-2 sm:gap-4 transition-all duration-500 transform translate-y-0 opacity-100">
             <button onclick="ajustarZoom(-25)" class="hover:text-[#ED1C24] p-1 transition-colors">
                 <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path></svg>
             </button>
@@ -116,6 +118,10 @@
         var pestanaActiva = 'APF';
         var zoomVisual = 100; 
         var mesesArray = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        // VARIABLES PARA EL ZOOM INTELIGENTE
+        var zoomTimeout;
+        var lastScrollTop = 0;
 
         async function validarAcceso() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
@@ -172,6 +178,48 @@
             cargarPDF();
         }
 
+        // --- LÓGICA DE ZOOM INTELIGENTE (SMART HIDE) ---
+        function mostrarZoom() {
+            const zoomBar = document.getElementById('zoomBar');
+            zoomBar.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+            zoomBar.classList.add('translate-y-0', 'opacity-100');
+            iniciarOcultadoZoom();
+        }
+
+        function ocultarZoom() {
+            const zoomBar = document.getElementById('zoomBar');
+            zoomBar.classList.remove('translate-y-0', 'opacity-100');
+            zoomBar.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+        }
+
+        function iniciarOcultadoZoom() {
+            clearTimeout(zoomTimeout);
+            zoomTimeout = setTimeout(ocultarZoom, 3500); // Se oculta tras 3.5 segundos de inactividad
+        }
+
+        function mantenerZoom() {
+            clearTimeout(zoomTimeout); // Evita que se oculte si el mouse está encima
+        }
+
+        // Detectar Scroll
+        window.addEventListener('scroll', function() {
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (scrollTop > lastScrollTop && scrollTop > 50) {
+                ocultarZoom(); // Scroll hacia abajo
+            } else {
+                mostrarZoom(); // Scroll hacia arriba
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        }, false);
+
+        // Detectar Mouse cerca del borde inferior (Para usuarios de PC)
+        window.addEventListener('mousemove', function(e) {
+            if (window.innerHeight - e.clientY < 150) {
+                mostrarZoom();
+            }
+        });
+
+        // --- FUNCIONES DE ZOOM CSS ---
         function ajustarZoom(delta) {
             zoomVisual = Math.max(50, Math.min(250, zoomVisual + delta));
             aplicarZoomCSS();
@@ -231,6 +279,7 @@
                         container.appendChild(canvas);
                     }
                 }
+                mostrarZoom(); // Muestra el zoom automáticamente al terminar de cargar el PDF
             } catch (e) { 
                 container.innerHTML = `<p class="text-center text-red-500 font-bold mt-10">Error al cargar el archivo PDF de ${pestanaActiva}.</p>`; 
             } finally {
