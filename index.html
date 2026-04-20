@@ -8,13 +8,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
-        /* Estilos del Canvas y cursores para el Paneo */
         canvas { display: block; margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; pointer-events: none; }
         #pdf-container { cursor: grab; }
         #pdf-container:active { cursor: grabbing; }
-        
-        .pulse-red { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .group:hover .submenu { opacity: 1; visibility: visible; transform: translateY(0); }
         .submenu { transition: all 0.3s ease; opacity: 0; visibility: hidden; transform: translateY(10px); }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -27,19 +23,17 @@
 
     <div id="login-section" class="flex items-center justify-center h-screen relative z-50 bg-slate-900 bg-cover bg-center" style="background-image: url('fondo_login.png');">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm z-0"></div>
-        
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 text-center mx-4 relative z-10">
             <img id="empresa-logo-login" src="logo-bambas.png" alt="Logo Las Bambas" class="mx-auto mb-6 max-w-full">
             <h1 class="text-3xl font-extrabold mb-2 text-[#ED1C24]">Control de Reportes</h1>
             <p class="text-slate-600 mb-8 font-medium">Ingrese su código de gerencia</p>
             <input type="text" id="accessCode" placeholder="CÓDIGO" class="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl mb-6 text-center text-xl tracking-widest uppercase focus:border-[#ED1C24] outline-none transition-all">
-            <button onclick="validarAcceso()" class="w-full bg-[#ED1C24] hover:bg-[#D11118] text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95">INGRESAR AL SISTEMA</button>
+            <button onclick="iniciarSesion()" class="w-full bg-[#ED1C24] hover:bg-[#D11118] text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95">INGRESAR AL SISTEMA</button>
             <p class="text-xs text-slate-500 mt-4">Desarrollado por Nataly Coronel A.</p>
         </div>
     </div>
 
     <div id="report-section" class="hidden pb-32">
-        
         <nav class="bg-white border-b border-slate-300 sticky top-0 z-40 shadow-sm">
             <div class="container mx-auto px-4">
                 <div class="flex justify-between items-center py-4">
@@ -47,7 +41,12 @@
                         <img src="logo-bambas.png" alt="Logo" class="h-10 object-contain hidden sm:block">
                         <div class="sm:border-l-2 border-slate-200 sm:pl-4">
                             <h2 id="nombreGerencia" class="text-lg sm:text-xl font-bold text-[#ED1C24]">---</h2>
-                            <p id="subtituloMes" class="text-[10px] sm:text-xs text-slate-600 uppercase font-bold tracking-widest">---</p>
+                            <div class="mt-1">
+                                <select id="selectorMes" onchange="cambiarMesHistorial()" class="bg-slate-100 border border-slate-200 text-slate-700 text-[10px] sm:text-xs font-bold rounded-lg px-2 py-1 outline-none cursor-pointer hover:bg-slate-200 transition-all uppercase tracking-widest">
+                                    <option value="abril_2026">Abril 2026</option>
+                                    <option value="mayo_2026">Mayo 2026</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <button onclick="location.reload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all border border-slate-200">SALIR</button>
@@ -62,12 +61,11 @@
 
         <div id="loading-indicator" class="hidden flex-col items-center justify-center mt-20">
             <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-[#ED1C24] mb-4"></div>
-            <p id="loading-text" class="text-slate-600 font-bold tracking-widest uppercase text-xs sm:text-sm">Conectando...</p>
+            <p id="loading-text" class="text-slate-600 font-bold tracking-widest uppercase text-xs sm:text-sm">Conectando base de datos...</p>
         </div>
 
         <div id="pdf-scroll-wrapper" class="w-full overflow-x-auto pb-8">
-            <div id="pdf-container" class="mx-auto flex flex-col items-center transition-all duration-300 origin-top" style="width: 100%; max-width: 1100px;">
-                </div>
+            <div id="pdf-container" class="mx-auto flex flex-col items-center transition-all duration-300 origin-top" style="width: 100%; max-width: 1100px;"></div>
         </div>
 
         <div id="zoomBar" onmouseenter="mantenerZoom()" onmouseleave="iniciarOcultadoZoom()" class="fixed bottom-[90px] sm:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-800/90 text-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 shadow-xl border border-slate-600 backdrop-blur-sm gap-2 sm:gap-4 transition-all duration-500 transform translate-y-0 opacity-100">
@@ -87,19 +85,18 @@
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-[#ED1C24]"></span>
             </span>
-            <span class="tracking-wide">Completar Forms <span id="labelForms"></span></span>
+            <span class="tracking-wide">Forms <span id="labelForms"></span></span>
         </a>
 
         <div id="panelDescargas" class="hidden fixed bottom-6 right-4 sm:right-6 z-50 group">
             <div class="submenu absolute bottom-full right-0 mb-4 flex flex-col gap-2 w-56 sm:w-64 bg-white p-3 rounded-2xl shadow-2xl border border-slate-200">
                 <p class="text-[9px] sm:text-[10px] text-slate-400 font-bold px-2 mb-1 uppercase tracking-widest">Reporte Mensual</p>
-                <a href="reporte.pbix" download class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm">
+                <a id="btnDescargarPbix" href="#" download class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm">
                     <span>📊</span> Descargar PBIX
                 </a>
                 <button onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm">
                     <span>📄</span> Descargar PDF Actual
                 </button>
-                
                 <div id="seccionDescargasAPF" class="hidden mt-2 pt-2 border-t border-slate-100 flex flex-col gap-2">
                     <p class="text-[9px] sm:text-[10px] text-slate-400 font-bold px-2 mb-1 uppercase tracking-widest">Procedimientos</p>
                     <a href="formato_pif.pdf" download class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl font-bold text-[11px] flex items-center gap-3 transition-all">
@@ -120,22 +117,19 @@
         var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM';
         var PDF_FILES = { 'APF': 'reporte_apf.pdf', 'CAPEX': 'reporte_capex.pdf', 'OPEX': 'reporte_opex.pdf' };
         
+        var codigoUsuarioGlobal = "";
         var dataGerencia = null;
         var pestanaActiva = 'APF';
         var zoomVisual = 100; 
-        var mesesArray = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
         var zoomTimeout;
         var lastScrollTop = 0;
-
-        // --- SISTEMA DE PANEO (MANITO PARA ARRASTRAR) ---
         let isDragging = false;
         let startX, startY, scrollLeftPos, scrollTopPos;
 
+        // PANEO INTERACTIVO
         document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('pdf-container');
             const wrapper = document.getElementById('pdf-scroll-wrapper');
-
             container.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 startX = e.pageX - wrapper.offsetLeft;
@@ -143,41 +137,56 @@
                 scrollLeftPos = wrapper.scrollLeft;
                 scrollTopPos = window.pageYOffset || document.documentElement.scrollTop;
             });
-
-            window.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-
+            window.addEventListener('mouseup', () => { isDragging = false; });
             window.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
-                e.preventDefault(); // Evita seleccionar texto por accidente al mover
-                
-                const x = e.pageX - wrapper.offsetLeft;
-                const y = e.pageY;
-                
-                // Calculamos cuánto se movió el mouse
-                const walkX = (x - startX); 
-                const walkY = (y - startY);
-                
-                // Aplicamos el movimiento a la barra horizontal y a la pantalla vertical
+                e.preventDefault(); 
+                const walkX = ((e.pageX - wrapper.offsetLeft) - startX); 
+                const walkY = (e.pageY - startY);
                 wrapper.scrollLeft = scrollLeftPos - walkX;
                 window.scrollTo(window.pageXOffset, scrollTopPos - walkY);
             });
         });
-        // ------------------------------------------------
 
-        async function validarAcceso() {
+        // NUEVA LÓGICA DE INICIO Y CAMBIO DE MES
+        async function iniciarSesion() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
+            if(!inputCode) { alert("Ingrese un código por favor."); return; }
+            codigoUsuarioGlobal = inputCode;
+            await procesarDatosDelMes();
+        }
+
+        async function cambiarMesHistorial() {
+            document.getElementById('pdf-container').innerHTML = ''; // Limpiar pantalla
+            await procesarDatosDelMes();
+        }
+
+        async function procesarDatosDelMes() {
+            var mesElegido = document.getElementById('selectorMes').value; // Ej: "abril_2026"
+            
+            // Se añade el parámetro sheet=mesElegido para buscar en la pestaña correcta
+            var url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${mesElegido}`;
+            
+            const loader = document.getElementById('loading-indicator');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            document.getElementById('loading-text').innerText = `Buscando datos de ${mesElegido.replace('_', ' ')}...`;
+
             try {
-                var url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
                 var resp = await fetch(url);
                 var text = await resp.text();
+                
+                if (text.includes('INVALID_QUERY') || text.includes('error')) {
+                    throw new Error("No existe la pestaña " + mesElegido + " en el Excel.");
+                }
+
                 var json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
                 var rows = json.table.rows;
+                dataGerencia = null; // Resetear data
 
                 for (var i = 0; i < rows.length; i++) {
                     var f = rows[i].c;
-                    if (f && f[0] && f[0].v.toString().toUpperCase() === inputCode) {
+                    if (f && f[0] && f[0].v && f[0].v.toString().toUpperCase() === codigoUsuarioGlobal) {
                         const leer = (idx) => (f[idx] && f[idx].v) ? f[idx].v.toString() : "";
                         dataGerencia = {
                             nombre: leer(1),
@@ -188,16 +197,27 @@
                         break;
                     }
                 }
+                
                 if (dataGerencia) {
                     document.getElementById('login-section').style.display = 'none';
                     document.getElementById('report-section').classList.remove('hidden');
                     document.getElementById('nombreGerencia').innerText = dataGerencia.nombre;
-                    var fecha = new Date();
-                    document.getElementById('subtituloMes').innerText = "REPORTE - " + mesesArray[fecha.getMonth()].toUpperCase() + " " + fecha.getFullYear();
-                    document.getElementById('panelDescargas').classList.remove('hidden');
+                    
+                    // Actualizar enlace dinámico del PBIX según el mes
+                    document.getElementById('btnDescargarPbix').href = `${mesElegido}/reporte.pbix`;
+
                     cambiarPestana('APF');
-                } else { alert("Código no válido"); }
-            } catch (e) { alert("Error de conexión"); }
+                } else { 
+                    alert("Código no encontrado en el mes seleccionado."); 
+                }
+            } catch (e) { 
+                console.error(e);
+                alert("Error: " + e.message + "\nAsegúrese de haber creado la pestaña en su Google Sheets."); 
+                document.getElementById('pdf-container').innerHTML = `<p class="text-center text-red-500 font-bold mt-10">Sin datos para este mes.</p>`;
+            } finally {
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+            }
         }
 
         function cambiarPestana(tipo) {
@@ -211,14 +231,14 @@
             tipo === 'APF' ? secAPF.classList.remove('hidden') : secAPF.classList.add('hidden');
 
             const btnF = document.getElementById('btnFormsFlotante');
-            if (dataGerencia[tipo].debe) {
+            if (dataGerencia && dataGerencia[tipo].debe) {
                 btnF.classList.remove('hidden'); btnF.classList.add('flex');
                 btnF.href = dataGerencia[tipo].link;
                 document.getElementById('labelForms').innerText = tipo;
             } else { btnF.classList.add('hidden'); }
 
             resetZoom();
-            cargarPDF();
+            if(dataGerencia) cargarPDF();
         }
 
         function mostrarZoom() {
@@ -227,48 +247,23 @@
             zoomBar.classList.add('translate-y-0', 'opacity-100');
             iniciarOcultadoZoom();
         }
-
         function ocultarZoom() {
             const zoomBar = document.getElementById('zoomBar');
             zoomBar.classList.remove('translate-y-0', 'opacity-100');
             zoomBar.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
         }
-
-        function iniciarOcultadoZoom() {
-            clearTimeout(zoomTimeout);
-            zoomTimeout = setTimeout(ocultarZoom, 3500); 
-        }
-
-        function mantenerZoom() {
-            clearTimeout(zoomTimeout); 
-        }
-
+        function iniciarOcultadoZoom() { clearTimeout(zoomTimeout); zoomTimeout = setTimeout(ocultarZoom, 3500); }
+        function mantenerZoom() { clearTimeout(zoomTimeout); }
         window.addEventListener('scroll', function() {
             let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if (scrollTop > lastScrollTop && scrollTop > 50) {
-                ocultarZoom(); 
-            } else {
-                mostrarZoom(); 
-            }
+            if (scrollTop > lastScrollTop && scrollTop > 50) ocultarZoom(); 
+            else mostrarZoom(); 
             lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
         }, false);
+        window.addEventListener('mousemove', function(e) { if (window.innerHeight - e.clientY < 150) mostrarZoom(); });
 
-        window.addEventListener('mousemove', function(e) {
-            if (window.innerHeight - e.clientY < 150) {
-                mostrarZoom();
-            }
-        });
-
-        function ajustarZoom(delta) {
-            zoomVisual = Math.max(50, Math.min(250, zoomVisual + delta));
-            aplicarZoomCSS();
-        }
-
-        function resetZoom() {
-            zoomVisual = 100;
-            aplicarZoomCSS();
-        }
-
+        function ajustarZoom(delta) { zoomVisual = Math.max(50, Math.min(250, zoomVisual + delta)); aplicarZoomCSS(); }
+        function resetZoom() { zoomVisual = 100; aplicarZoomCSS(); }
         function aplicarZoomCSS() {
             document.getElementById('zoomLabel').innerText = zoomVisual + "%";
             const container = document.getElementById('pdf-container');
@@ -280,62 +275,59 @@
             const container = document.getElementById('pdf-container');
             const loader = document.getElementById('loading-indicator');
             const loaderText = document.getElementById('loading-text');
+            const mesElegido = document.getElementById('selectorMes').value;
+            
+            // LA RUTA AHORA INCLUYE LA CARPETA DEL MES (ej. abril_2026/reporte_apf.pdf)
+            const urlPdfMes = `${mesElegido}/${PDF_FILES[pestanaActiva]}`; 
             const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-            const url = PDF_FILES[pestanaActiva];
             
             container.innerHTML = '';
-            
             if(pags.length === 0) {
                 container.innerHTML = `<div class="text-center p-12 bg-white rounded-xl shadow-sm border border-slate-200 mt-8 w-full"><p class="text-slate-500 font-bold text-lg">No hay páginas asignadas para ${pestanaActiva}.</p></div>`;
                 return;
             }
 
-            loader.classList.remove('hidden');
-            loader.classList.add('flex');
-            loaderText.innerText = 'Inicializando documento...';
+            loader.classList.remove('hidden'); loader.classList.add('flex');
+            loaderText.innerText = 'Buscando documento en archivo...';
 
             try {
                 const pdfjsLib = window['pdfjs-dist/build/pdf'];
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-                const pdf = await pdfjsLib.getDocument(url).promise;
+                const pdf = await pdfjsLib.getDocument(urlPdfMes).promise;
                 
                 for (let i = 0; i < pags.length; i++) {
                     let num = pags[i];
                     if (num > 0 && num <= pdf.numPages) {
                         loaderText.innerText = `Procesando página ${i + 1} de ${pags.length}...`;
-                        
                         const page = await pdf.getPage(num);
                         const viewport = page.getViewport({ scale: 3.5 });
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        canvas.height = viewport.height; 
-                        canvas.width = viewport.width;
-                        
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = "high";
-                        
+                        canvas.height = viewport.height; canvas.width = viewport.width;
+                        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
                         await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                         container.appendChild(canvas);
                     }
                 }
                 mostrarZoom(); 
             } catch (e) { 
-                container.innerHTML = `<p class="text-center text-red-500 font-bold mt-10">Error al cargar el archivo PDF de ${pestanaActiva}.</p>`; 
+                container.innerHTML = `<p class="text-center text-red-500 font-bold mt-10">Error: No se encontró el archivo en la carpeta /${mesElegido}/.</p>`; 
             } finally {
-                loader.classList.add('hidden');
-                loader.classList.remove('flex');
+                loader.classList.add('hidden'); loader.classList.remove('flex');
             }
         }
 
         async function descargarPDFGenerado() {
             var btn = document.getElementById('btnDescargarPdf');
             var textoOrig = btn.innerHTML;
-            btn.innerHTML = '⏳ Generando...';
-            btn.disabled = true;
+            btn.innerHTML = '⏳ Generando...'; btn.disabled = true;
 
             try {
+                const mesElegido = document.getElementById('selectorMes').value;
+                const urlPdfMes = `${mesElegido}/${PDF_FILES[pestanaActiva]}`; 
                 const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-                const resp = await fetch(PDF_FILES[pestanaActiva]);
+                
+                const resp = await fetch(urlPdfMes);
                 const bytes = await resp.arrayBuffer();
                 const { PDFDocument } = PDFLib;
                 const pdfOrig = await PDFDocument.load(bytes);
@@ -348,12 +340,9 @@
                 const blob = new Blob([await pdfNuevo.save()], { type: "application/pdf" });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                
-                var fecha = new Date();
-                var textoFecha = mesesArray[fecha.getMonth()] + "_" + fecha.getFullYear();
-                link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}_${textoFecha}.pdf`;
+                link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}_${mesElegido}.pdf`;
                 link.click();
-            } catch (e) { alert("Error en descarga"); }
+            } catch (e) { alert("Error en descarga. Verifique que el archivo exista en la carpeta del mes."); }
             finally { btn.innerHTML = textoOrig; btn.disabled = false; }
         }
     </script>
