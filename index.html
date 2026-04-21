@@ -97,13 +97,14 @@
                 <button onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm">
                     <span>📄</span> Descargar PDF Actual
                 </button>
-                <div id="seccionDescargasAPF" class="hidden mt-2 pt-2 border-t border-slate-100 flex flex-col gap-2">
+                
+                <div id="seccionDescargasAPF" class="mt-2 pt-2 border-t border-slate-100 flex-col gap-2" style="display: none;">
                     <p class="text-[9px] sm:text-[10px] text-slate-400 font-bold px-2 mb-1 uppercase tracking-widest">Procedimientos</p>
                     <a href="formato_pif.pdf" download class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl font-bold text-[11px] flex items-center gap-3 transition-all">
-                        <span class="text-red-600 font-bold text-sm">PDF</span> Documento PIF
+                        <span class="text-red-600 font-bold text-sm">📄</span> Documento PIF
                     </a>
                     <a href="formato_apf.docx" download class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl font-bold text-[11px] flex items-center gap-3 transition-all">
-                        <span class="text-blue-600 font-bold text-sm">DOC</span> Plantilla APF
+                        <span class="text-blue-600 font-bold text-sm">📝</span> Plantilla APF
                     </a>
                 </div>
             </div>
@@ -148,7 +149,6 @@
             });
         });
 
-        // NUEVA LÓGICA DE INICIO Y CAMBIO DE MES
         async function iniciarSesion() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
             if(!inputCode) { alert("Ingrese un código por favor."); return; }
@@ -157,14 +157,12 @@
         }
 
         async function cambiarMesHistorial() {
-            document.getElementById('pdf-container').innerHTML = ''; // Limpiar pantalla
+            document.getElementById('pdf-container').innerHTML = ''; 
             await procesarDatosDelMes();
         }
 
         async function procesarDatosDelMes() {
-            var mesElegido = document.getElementById('selectorMes').value; // Ej: "abril_2026"
-            
-            // Se añade el parámetro sheet=mesElegido para buscar en la pestaña correcta
+            var mesElegido = document.getElementById('selectorMes').value; 
             var url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${mesElegido}`;
             
             const loader = document.getElementById('loading-indicator');
@@ -182,7 +180,7 @@
 
                 var json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
                 var rows = json.table.rows;
-                dataGerencia = null; // Resetear data
+                dataGerencia = null; 
 
                 for (var i = 0; i < rows.length; i++) {
                     var f = rows[i].c;
@@ -202,9 +200,8 @@
                     document.getElementById('login-section').style.display = 'none';
                     document.getElementById('report-section').classList.remove('hidden');
                     document.getElementById('nombreGerencia').innerText = dataGerencia.nombre;
-                    
-                    // Actualizar enlace dinámico del PBIX según el mes
                     document.getElementById('btnDescargarPbix').href = `${mesElegido}/reporte.pbix`;
+                    document.getElementById('panelDescargas').classList.remove('hidden');
 
                     cambiarPestana('APF');
                 } else { 
@@ -222,25 +219,39 @@
 
         function cambiarPestana(tipo) {
             pestanaActiva = tipo;
+            
+            // 1. Cambiar color de las pestañas superiores
             ['APF', 'CAPEX', 'OPEX'].forEach(t => {
                 const btn = document.getElementById(`tab-${t.toLowerCase()}`);
                 btn.className = (t === tipo) ? "py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24] transition-all whitespace-nowrap" : "py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-all whitespace-nowrap";
             });
 
+            // 2. Mostrar u ocultar descargas exclusivas de APF (Procedimientos)
             const secAPF = document.getElementById('seccionDescargasAPF');
-            tipo === 'APF' ? secAPF.classList.remove('hidden') : secAPF.classList.add('hidden');
+            if (tipo === 'APF') {
+                secAPF.style.display = 'flex';
+            } else {
+                secAPF.style.display = 'none';
+            }
 
+            // 3. Mostrar u ocultar el botón flotante de Forms
             const btnF = document.getElementById('btnFormsFlotante');
             if (dataGerencia && dataGerencia[tipo].debe) {
-                btnF.classList.remove('hidden'); btnF.classList.add('flex');
+                btnF.classList.remove('hidden'); 
+                btnF.classList.add('flex');
                 btnF.href = dataGerencia[tipo].link;
                 document.getElementById('labelForms').innerText = tipo;
-            } else { btnF.classList.add('hidden'); }
+            } else { 
+                btnF.classList.add('hidden'); 
+                btnF.classList.remove('flex');
+            }
 
+            // 4. Actualizar el PDF y reiniciar zoom
             resetZoom();
             if(dataGerencia) cargarPDF();
         }
 
+        // ZOOM INTELIGENTE Y CONTROLES CSS
         function mostrarZoom() {
             const zoomBar = document.getElementById('zoomBar');
             zoomBar.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
@@ -254,6 +265,7 @@
         }
         function iniciarOcultadoZoom() { clearTimeout(zoomTimeout); zoomTimeout = setTimeout(ocultarZoom, 3500); }
         function mantenerZoom() { clearTimeout(zoomTimeout); }
+        
         window.addEventListener('scroll', function() {
             let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             if (scrollTop > lastScrollTop && scrollTop > 50) ocultarZoom(); 
@@ -276,9 +288,8 @@
             const loader = document.getElementById('loading-indicator');
             const loaderText = document.getElementById('loading-text');
             const mesElegido = document.getElementById('selectorMes').value;
-            
-            // LA RUTA AHORA INCLUYE LA CARPETA DEL MES (ej. abril_2026/reporte_apf.pdf)
             const urlPdfMes = `${mesElegido}/${PDF_FILES[pestanaActiva]}`; 
+            
             const pags = dataGerencia[pestanaActiva].pag.split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
             
             container.innerHTML = '';
@@ -288,7 +299,7 @@
             }
 
             loader.classList.remove('hidden'); loader.classList.add('flex');
-            loaderText.innerText = 'Buscando documento en archivo...';
+            loaderText.innerText = `Cargando reporte ${pestanaActiva}...`;
 
             try {
                 const pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -319,8 +330,7 @@
 
         async function descargarPDFGenerado() {
             var btn = document.getElementById('btnDescargarPdf');
-            var textoOrig = btn.innerHTML;
-            btn.innerHTML = '⏳ Generando...'; btn.disabled = true;
+            if(btn) btn.disabled = true;
 
             try {
                 const mesElegido = document.getElementById('selectorMes').value;
@@ -342,8 +352,11 @@
                 link.href = URL.createObjectURL(blob);
                 link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}_${mesElegido}.pdf`;
                 link.click();
-            } catch (e) { alert("Error en descarga. Verifique que el archivo exista en la carpeta del mes."); }
-            finally { btn.innerHTML = textoOrig; btn.disabled = false; }
+            } catch (e) { 
+                alert("Error en descarga. Verifique que el archivo exista en la carpeta del mes."); 
+            } finally {
+                if(btn) btn.disabled = false;
+            }
         }
     </script>
 </body>
