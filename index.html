@@ -28,7 +28,7 @@
             <h1 class="text-3xl font-extrabold mb-2 text-[#ED1C24]">Control de Reportes</h1>
             <p class="text-slate-600 mb-8 font-medium">Ingrese su código de gerencia</p>
             <input type="text" id="accessCode" placeholder="CÓDIGO" class="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl mb-6 text-center text-xl tracking-widest uppercase focus:border-[#ED1C24] outline-none transition-all">
-            <button onclick="iniciarSesion()" class="w-full bg-[#ED1C24] hover:bg-[#D11118] text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95">INGRESAR AL SISTEMA</button>
+            <button onclick="validarAcceso()" class="w-full bg-[#ED1C24] hover:bg-[#D11118] text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95">INGRESAR AL SISTEMA</button>
             <p class="text-xs text-slate-500 mt-4">Desarrollado por Nataly Coronel A.</p>
         </div>
     </div>
@@ -41,7 +41,9 @@
                         <img src="logo-bambas.png" alt="Logo" class="h-10 object-contain hidden sm:block">
                         <div class="sm:border-l-2 border-slate-200 sm:pl-4">
                             <h2 id="nombreGerencia" class="text-lg sm:text-xl font-bold text-[#ED1C24]">---</h2>
-                            <div class="mt-1">
+                            <p id="fechaReporte" class="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mt-0.5">---</p>
+                            
+                            <div class="mt-2">
                                 <select id="selectorMes" onchange="cambiarMesHistorial()" class="bg-slate-100 border border-slate-200 text-slate-700 text-[10px] sm:text-xs font-bold rounded-lg px-2 py-1 outline-none cursor-pointer hover:bg-slate-200 transition-all uppercase tracking-widest">
                                     <option value="abril_2026">Abril 2026</option>
                                     <option value="mayo_2026">Mayo 2026</option>
@@ -68,7 +70,7 @@
             <div id="pdf-container" class="mx-auto flex flex-col items-center transition-all duration-300 origin-top" style="width: 100%; max-width: 1100px;"></div>
         </div>
 
-        <div id="zoomBar" onmouseenter="mantenerZoom()" onmouseleave="iniciarOcultadoZoom()" class="fixed bottom-[90px] sm:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-800/90 text-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 shadow-xl border border-slate-600 backdrop-blur-sm gap-2 sm:gap-4 transition-all duration-500 transform translate-y-0 opacity-100">
+        <div id="zoomBar" onmouseenter="mantenerZoom()" onmouseleave="iniciarOcultadoZoom()" class="fixed bottom-[90px] sm:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-800/90 text-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 shadow-xl border border-slate-600 backdrop-blur-sm gap-2 sm:gap-4 transition-all duration-500 transform translate-y-32 opacity-0 pointer-events-none">
             <button onclick="ajustarZoom(-25)" class="hover:text-[#ED1C24] p-1 transition-colors">
                 <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path></svg>
             </button>
@@ -85,7 +87,7 @@
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-[#ED1C24]"></span>
             </span>
-            <span class="tracking-wide">Forms <span id="labelForms"></span></span>
+            <span class="tracking-wide">Completar Forms <span id="labelForms"></span></span>
         </a>
 
         <div id="panelDescargas" class="hidden fixed bottom-6 right-4 sm:right-6 z-50 group">
@@ -94,8 +96,13 @@
                 <a id="btnDescargarPbix" href="#" download class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm">
                     <span>📊</span> Descargar PBIX
                 </a>
-                <button onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm">
-                    <span>📄</span> Descargar PDF Actual
+                
+                <button onclick="descargarPDFGenerado()" class="bg-[#ED1C24] hover:bg-[#D11118] text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm text-left">
+                    <span>✂️</span> Descargar PDF Filtrado
+                </button>
+                
+                <button onclick="descargarPDFCompleto()" class="bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm text-left">
+                    <span>📚</span> Descargar PDF Completo
                 </button>
                 
                 <div id="seccionDescargasAPF" class="mt-2 pt-2 border-t border-slate-100 flex-col gap-2" style="display: none;">
@@ -118,6 +125,10 @@
         var SHEET_ID = '1jniLKCMtgkJ7uTLifpCoMT8G56mOPJmjao3U7PVb4DM';
         var PDF_FILES = { 'APF': 'reporte_apf.pdf', 'CAPEX': 'reporte_capex.pdf', 'OPEX': 'reporte_opex.pdf' };
         
+        var mesesArray = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        var fechaActual = new Date();
+        var textoFecha = `REPORTE - ${mesesArray[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`;
+        
         var codigoUsuarioGlobal = "";
         var dataGerencia = null;
         var pestanaActiva = 'APF';
@@ -127,7 +138,6 @@
         let isDragging = false;
         let startX, startY, scrollLeftPos, scrollTopPos;
 
-        // PANEO INTERACTIVO
         document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('pdf-container');
             const wrapper = document.getElementById('pdf-scroll-wrapper');
@@ -149,7 +159,7 @@
             });
         });
 
-        async function iniciarSesion() {
+        async function validarAcceso() {
             var inputCode = document.getElementById('accessCode').value.trim().toUpperCase();
             if(!inputCode) { alert("Ingrese un código por favor."); return; }
             codigoUsuarioGlobal = inputCode;
@@ -166,8 +176,7 @@
             var url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${mesElegido}`;
             
             const loader = document.getElementById('loading-indicator');
-            loader.classList.remove('hidden');
-            loader.classList.add('flex');
+            loader.classList.remove('hidden'); loader.classList.add('flex');
             document.getElementById('loading-text').innerText = `Buscando datos de ${mesElegido.replace('_', ' ')}...`;
 
             try {
@@ -175,10 +184,11 @@
                 var text = await resp.text();
                 
                 if (text.includes('INVALID_QUERY') || text.includes('error')) {
-                    throw new Error("No existe la pestaña " + mesElegido + " en el Excel.");
+                    throw new Error("Pestaña no encontrada en Excel");
                 }
 
-                var json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+                var jsonText = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+                var json = JSON.parse(jsonText);
                 var rows = json.table.rows;
                 dataGerencia = null; 
 
@@ -200,58 +210,46 @@
                     document.getElementById('login-section').style.display = 'none';
                     document.getElementById('report-section').classList.remove('hidden');
                     document.getElementById('nombreGerencia').innerText = dataGerencia.nombre;
+                    document.getElementById('fechaReporte').innerText = textoFecha;
                     document.getElementById('btnDescargarPbix').href = `${mesElegido}/reporte.pbix`;
                     document.getElementById('panelDescargas').classList.remove('hidden');
-
                     cambiarPestana('APF');
                 } else { 
-                    alert("Código no encontrado en el mes seleccionado."); 
+                    alert("Código no reconocido en el mes seleccionado."); 
                 }
             } catch (e) { 
-                console.error(e);
-                alert("Error: " + e.message + "\nAsegúrese de haber creado la pestaña en su Google Sheets."); 
+                console.error("Error validando acceso:", e);
+                alert("Error de conexión. Asegúrese de que el Excel sea PÚBLICO y que la pestaña " + mesElegido + " exista.");
                 document.getElementById('pdf-container').innerHTML = `<p class="text-center text-red-500 font-bold mt-10">Sin datos para este mes.</p>`;
             } finally {
-                loader.classList.add('hidden');
-                loader.classList.remove('flex');
+                loader.classList.add('hidden'); loader.classList.remove('flex');
             }
         }
 
         function cambiarPestana(tipo) {
             pestanaActiva = tipo;
             
-            // 1. Cambiar color de las pestañas superiores
             ['APF', 'CAPEX', 'OPEX'].forEach(t => {
                 const btn = document.getElementById(`tab-${t.toLowerCase()}`);
                 btn.className = (t === tipo) ? "py-3 px-2 border-b-4 border-[#ED1C24] font-bold text-[#ED1C24] transition-all whitespace-nowrap" : "py-3 px-2 border-b-4 border-transparent text-slate-500 hover:text-slate-800 font-bold transition-all whitespace-nowrap";
             });
 
-            // 2. Mostrar u ocultar descargas exclusivas de APF (Procedimientos)
             const secAPF = document.getElementById('seccionDescargasAPF');
-            if (tipo === 'APF') {
-                secAPF.style.display = 'flex';
-            } else {
-                secAPF.style.display = 'none';
-            }
+            secAPF.style.display = (tipo === 'APF') ? 'flex' : 'none';
 
-            // 3. Mostrar u ocultar el botón flotante de Forms
             const btnF = document.getElementById('btnFormsFlotante');
             if (dataGerencia && dataGerencia[tipo].debe) {
-                btnF.classList.remove('hidden'); 
-                btnF.classList.add('flex');
+                btnF.classList.remove('hidden'); btnF.classList.add('flex');
                 btnF.href = dataGerencia[tipo].link;
                 document.getElementById('labelForms').innerText = tipo;
             } else { 
-                btnF.classList.add('hidden'); 
-                btnF.classList.remove('flex');
+                btnF.classList.add('hidden'); btnF.classList.remove('flex');
             }
 
-            // 4. Actualizar el PDF y reiniciar zoom
             resetZoom();
             if(dataGerencia) cargarPDF();
         }
 
-        // ZOOM INTELIGENTE Y CONTROLES CSS
         function mostrarZoom() {
             const zoomBar = document.getElementById('zoomBar');
             zoomBar.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
@@ -299,8 +297,7 @@
             }
 
             loader.classList.remove('hidden'); loader.classList.add('flex');
-            loaderText.innerText = `Cargando reporte ${pestanaActiva}...`;
-
+            
             try {
                 const pdfjsLib = window['pdfjs-dist/build/pdf'];
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
@@ -322,15 +319,16 @@
                 }
                 mostrarZoom(); 
             } catch (e) { 
-                container.innerHTML = `<p class="text-center text-red-500 font-bold mt-10">Error: No se encontró el archivo en la carpeta /${mesElegido}/.</p>`; 
+                container.innerHTML = `<p class="text-center text-red-500 font-bold mt-10">Error: No se encontró el archivo ${PDF_FILES[pestanaActiva]} en la carpeta /${mesElegido}/.</p>`; 
             } finally {
                 loader.classList.add('hidden'); loader.classList.remove('flex');
             }
         }
 
         async function descargarPDFGenerado() {
-            var btn = document.getElementById('btnDescargarPdf');
-            if(btn) btn.disabled = true;
+            var btn = event.currentTarget;
+            var txtOrig = btn.innerHTML;
+            btn.innerHTML = '<span>⏳</span> Cortando...'; btn.disabled = true;
 
             try {
                 const mesElegido = document.getElementById('selectorMes').value;
@@ -351,12 +349,28 @@
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = `Reporte_${pestanaActiva}_${dataGerencia.nombre.replace(/\s+/g, '_')}_${mesElegido}.pdf`;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
             } catch (e) { 
-                alert("Error en descarga. Verifique que el archivo exista en la carpeta del mes."); 
+                alert("Error al cortar el PDF. Verifique que exista."); 
             } finally {
-                if(btn) btn.disabled = false;
+                btn.innerHTML = txtOrig; btn.disabled = false;
             }
+        }
+
+        // NUEVA FUNCIÓN: Descargar el PDF original sin filtros
+        function descargarPDFCompleto() {
+            const mesElegido = document.getElementById('selectorMes').value;
+            const urlPdfMes = `${mesElegido}/${PDF_FILES[pestanaActiva]}`; 
+            
+            const link = document.createElement('a');
+            link.href = urlPdfMes;
+            // Forzamos el nombre de descarga indicando que es el reporte completo
+            link.download = `Reporte_COMPLETO_${pestanaActiva}_${mesElegido}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
